@@ -46,12 +46,6 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         #print(args)
         #print(kwargs)
 
-    def create(self, data):
-        print("create")
-        print(data)
-        #content = data.pop('content')
-        return models.Policy.objects.create(**data)
-
     def parse_conds(self, attr, value, rules, conds):
 
         # Attr which is <service>:<action> demands two conditions
@@ -216,10 +210,107 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         # Tranform rules to DNF
         rules_conds = self.to_dnf(conds,rules_conds)
 
-        print(conds)
-        print(rules_conds)
+        #print(conds)
+        #print(rules_conds)
+        
+        # Delete all and rules from the database
+        models.And_rule.objects.all().delete()
 
+        # Delete all conditions from the database
+        models.Condition.objects.all().delete()
+
+        # Create conditions in the database
+        for c in conds:
+            #print(c) #{'value': 'list_policies', 'attr': 'action', 'op': '=', 'attr_type': 'A'}
+
+            at = models.Attribute_type.objects.get(description = c['attr_type'])
+            op = models.Operator.objects.get(description = c['op'])
+
+            data = {
+                      "negated": False,
+                      "attribute_type": at,
+                      "attribute": c['attr'],
+                      "operator": op,
+                      "value": c['value'],
+                      "description": c['attr']+c['op']+c['value']
+                  }
+            #print(data)
+            models.Condition.objects.create(**data)
+            data = {}
+
+        # Create and_rules in database
+        for r in rules_conds.items():
+            #print(r) # ('identity:delete_vo_role', Or(And(c0, c2, c143), And(c0, c3, c143), And(c0, c4, c143)))
+            #print(type(r[1]))
+
+            # Only consider policy rules
+            if ':' in r[0]:
+                # Insert the AND Rule for the current policy rule
+                data = {
+                         "policy": instance,
+                         "description": r[0],
+                         "enabled": True,
+                       }
+                #print(data)
+                models.And_rule.objects.create(**data)
+
+                # Retrieve the AND Rule entry
+                ar = models.And_rule.objects.get(description = r[0])
+
+                # Add the conditions
+
+                if "Or(" == str(r[1])[0:3]:
+                    s = str(r[1])[3:-1]
+                    ands = s.split("And")
+                    for a in ands:
+                        cs = a.split(",")
+                        conditions = []
+                        for c in cs:
+                            c = c.strip().strip(',').strip('(').strip(')').strip('c')
+                            #print(c)
+                            if (c != "") and c is not None:
+                                c = int(float(c))
+                                cd = conds[c]
+                                #print( cd ) # {'attr': 'action', 'attr_type': 'A', 'op': '=', 'value': 'get_trust'}
+                                cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                                ar.conditions.add(cd)
+
+                elif "And(" == str(r[1])[0:4]:
+                    s = str(r[1])[4:-1]
+                    cs = s.split(",")
+                    conditions = []
+                    for c in cs:
+                        c = c.strip().strip(',').strip('(').strip(')').strip('c')
+                        #print(c)
+                        if (c != "") and c is not None:
+                            c = int(float(c))
+                            cd = conds[c]
+                            #print( cd ) # {'attr': 'action', 'attr_type': 'A', 'op': '=', 'value': 'get_trust'}
+                            cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                            ar.conditions.add(cd)
+   
+                else:
+                    print ("OTHER: Error!?")
+                    conditions = []
+                    c = str(r[1])
+                    c = c.strip().strip(',').strip('(').strip(')').strip('c')
+                    print(c)
+                    if (c != "") and c is not None:
+                        c = int(float(c))
+                        cd = conds[c]
+                        #print( cd ) # {'attr': 'action', 'attr_type': 'A', 'op': '=', 'value': 'get_trust'}
+                        cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                        ar.conditions.add(cd)
         return instance
+
+    def create(self, data):
+        print("create")
+
+        print(data)
+        #{'external_policy': '{}', 'description': 'cinder', 'external_policy_ref': 'cinder_policy.json', 'cloud_provider': <Cloud_provider: Cloud_provider object>}
+
+        #content = data.pop('content')
+        return models.Policy.objects.create(**data)
 
 class PolicyUploadSerializer(OpenstackPolicySerializer):
     class Meta:
