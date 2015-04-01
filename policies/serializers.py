@@ -52,78 +52,152 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         #content = data.pop('content')
         return models.Policy.objects.create(**data)
 
-    #subject_rules => Object with policy.json lines for subject rules
-    #subject_rules_cond => New JSON object. Will be populated with subject rules in conditional way
-    #conds => New JSON set object. Will be populated with the conditions
+    def parse_conds(self, attr, value, rules, conds):
 
-    def parse_conds(self, attr, value, subject_rules, conds):
+        # Attr which is <service>:<action> demands two conditions
+        if (':' in attr):
+
+            left = attr[:attr.find(':')]
+            right = attr[attr.find(':')+1:]
+
+            entry_l = {'attr_type':'R', 'attr': 'service', 'op':'=', 'value': left}
+            entry_r = {'attr_type':'A', 'attr': 'action', 'op':'=', 'value': right}
+
+            if entry_l not in conds:
+                conds = conds + [entry_l]
+
+            if entry_r not in conds:
+                conds = conds + [entry_r]
+            
         # ( -L- AND -R- )
         if (' and ' in value):
             left = value[:value.find(' and ')]
             right = value[value.find(' and ')+5:]
-            conds = self.parse_conds(attr, left, subject_rules, conds)
-            conds = self.parse_conds(attr, right, subject_rules, conds)
+            conds = self.parse_conds(attr, left, rules, conds)
+            conds = self.parse_conds(attr, right, rules, conds)
 
         # ( -L- OR -R- )
         elif (' or ' in value):
             left = value[:value.find(' or ')]
             right = value[value.find(' or ')+4:]
-            conds = self.parse_conds(attr, left, subject_rules, conds)
-            conds = self.parse_conds(attr, right, subject_rules, conds)
+            conds = self.parse_conds(attr, left, rules, conds)
+            conds = self.parse_conds(attr, right, rules, conds)
 
         # ( COND:VALUE )
         elif (':' in value):
             left = value[:value.find(':')]
             right = value[value.find(':')+1:]
             if left == "rule":
-                conds = self.parse_conds(attr, subject_rules[right], subject_rules, conds)
+                conds = self.parse_conds(attr, rules[right], rules, conds)
             else:
                 entry = {'attr_type':'S', 'attr': left, 'op':'=', 'value': right}
                 if entry not in conds:
                     conds = conds + [entry]                
+        elif value is None or value == "":
+            pass
         else:
-            print("bad condition: "+value)
+            print("bad condition: ")
+            print(attr)
+            print(value)
         return conds
 
-    def parse_subrules(self, attr, value, subject_rules, conds, subject_rules_conds):
+    def parse_rules(self, attr, value, rules, conds, rules_conds):
+
         # ( -L- AND -R- )
         if (' and ' in value):
             left = value[:value.find(' and ')]
             right = value[value.find(' and ')+5:]
-            subject_rules_conds_l = self.parse_subrules(attr, left, subject_rules, conds, {})
-            subject_rules_conds_r = self.parse_subrules(attr, right, subject_rules, conds, {})
-            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") & ("+subject_rules_conds_r[attr]+")"
+            rules_conds_l = self.parse_rules(attr, left, rules, conds, {})
+            rules_conds_r = self.parse_rules(attr, right, rules, conds, {})
+            rules_conds[attr] = "("+rules_conds_l[attr]+") & ("+rules_conds_r[attr]+")"
 
         # ( -L- OR -R- )
         elif (' or ' in value):
             left = value[:value.find(' or ')]
             right = value[value.find(' or ')+4:]
-            subject_rules_conds_l = self.parse_subrules(attr, left, subject_rules, conds, {})
-            subject_rules_conds_r = self.parse_subrules(attr, right, subject_rules, conds, {})
-            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") | ("+subject_rules_conds_r[attr]+")"
+            rules_conds_l = self.parse_rules(attr, left, rules, conds, {})
+            rules_conds_r = self.parse_rules(attr, right, rules, conds, {})
+            rules_conds[attr] = "("+rules_conds_l[attr]+") | ("+rules_conds_r[attr]+")"
 
         # ( COND:VALUE )
         elif (':' in value):
             left = value[:value.find(':')]
             right = value[value.find(':')+1:]
             if left == "rule":
-                subject_rules_conds = self.parse_subrules(attr, subject_rules[right], subject_rules, conds, subject_rules_conds)
+                rules_conds = self.parse_rules(attr, rules[right], rules, conds, rules_conds)
             else:
                 entry = {'attr_type':'S', 'attr': left, 'op':'=', 'value': right}
                 if entry not in conds:
-                    print("Error. Condition not found: "+entry)
-                #print (str(conds.index(entry))+" - "+str(entry))
-                subject_rules_conds[attr] = "c"+str(conds.index(entry))
-        else:
-            print("bad condition: "+value)
-        return subject_rules_conds
+                    print("Error. Condition not found: ")
+                    print(entry)
+                else:
+                    #print (str(conds.index(entry))+" - "+str(entry))
+                    rules_conds[attr] = "c"+str(conds.index(entry))
 
-    def parse(self, subject_rules, conds, subject_rules_conds):
-        for attr, value in subject_rules.items():
-            conds  = self.parse_conds(attr, value, subject_rules, conds)
-        for attr, value in subject_rules.items():
-            subject_rules_conds = self.parse_subrules(attr, value, subject_rules, conds, subject_rules_conds)
-        return conds, subject_rules_conds
+        elif value is None or value == "":
+            pass
+        else:
+            print("bad condition: ")
+            print(attr)
+            print(value)
+
+        return rules_conds
+
+    # Add service/action conditions to policy rules
+    def parse_polrules(self, attr, value, rules, conds, rules_conds):
+        if (':' in attr):
+            left = attr[:attr.find(':')]
+            right = attr[attr.find(':')+1:]
+
+            entry_l = {'attr_type':'R', 'attr': 'service', 'op':'=', 'value': left}
+            entry_r = {'attr_type':'A', 'attr': 'action', 'op':'=', 'value': right}
+
+            if (entry_l not in conds) or (entry_r not in conds):
+                print("Error. Condition not found: ")
+                print(entry_l)
+                print(entry_r)
+            elif attr not in rules_conds:
+                rules_conds[attr] = "(c"+str(conds.index(entry_l))+") & (c"+str(conds.index(entry_r))+")"
+            else:
+                rules_conds[attr] = "(c"+str(conds.index(entry_l))+") & (c"+str(conds.index(entry_r))+") & ("+rules_conds[attr]+")"
+
+        return rules_conds
+
+    def parse(self, ext_pol):
+
+        # Read rules and extract the conditions
+        # eg.: [{"attr_type": "S", "attr": "role", "op": "=", "value", "admin"}, ...]
+        conds = []
+
+        for attr, value in ext_pol.items():
+            conds  = self.parse_conds(attr, value, ext_pol, conds)
+
+        # Read rules and extract the logical expressions
+        # eg.: {"admin_required": "C1 OR C2", ...}
+        rules_conds = {}
+
+        for attr, value in ext_pol.items():
+            rules_conds = self.parse_rules(attr, value, ext_pol, conds, rules_conds)
+
+        # Add service and action rules
+        for attr, value in ext_pol.items():
+            rules_conds = self.parse_polrules(attr, value, ext_pol, conds, rules_conds)
+
+        return conds, rules_conds
+
+    def to_dnf(self, conds, rules_conds):
+        # Define global variables for each condition as a boolean expression
+        gbl = globals()
+        for i in range(len(conds)):
+            var = "c"+str(i)
+            gbl[var] = exprvar(var)
+
+        # Define expression based on subject rules and convert them to DNF
+        for rk, rv in rules_conds.items():
+            gbl[rk] = eval(rv)
+            rules_conds[rk] = gbl[rk].to_dnf()
+
+        return rules_conds
 
     def update(self, instance, data):
         print("update")
@@ -132,42 +206,18 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         instance.external_policy_ref = data.get('external_policy_ref', instance.external_policy_ref)
         instance.external_policy = data.get('external_policy', instance.external_policy)
         instance.save()
+
+        # Load the variable of the external policy (policy.json content)
         ext_pol=json.loads(instance.external_policy)
-        #print(ext_pol)
-        #read lines from json and classify them in Subject Rules and Policy Rules
 
-        subject_rules = {}
-        policy_rules = {}
+        # Parses its content.
+        conds, rules_conds = self.parse(ext_pol)
 
-        for attr, value in ext_pol.items():
-            if (':' in attr):
-                policy_rules[attr] = value
-            else:
-                subject_rules[attr] = value
-
-        #print(subject_rules)
-
-        conds = []
-        # eg.: [{"attr_type": "S", "attr": "role", "op": "=", "value", "admin"}, ...]
-        subject_rules_conds = {}
-        # eg.: {"admin_required": "C1 OR C2", ...}
-
-        conds, subject_rules_conds = self.parse(subject_rules, conds, subject_rules_conds)
+        # Tranform rules to DNF
+        rules_conds = self.to_dnf(conds,rules_conds)
 
         print(conds)
-        print(subject_rules_conds)
-
-        # Define global variables for each condition as a boolean expression
-        gbl = globals()
-        for i in range(len(conds)):
-            var = "c"+str(i)
-            gbl[var] = exprvar(var)
-
-        # Define expression based on subject rules
-        for rk, rv in subject_rules_conds.items():
-            gbl[rk] = eval(rv)
-
-        print(vo_admin.to_dnf())
+        print(rules_conds)
 
         return instance
 
