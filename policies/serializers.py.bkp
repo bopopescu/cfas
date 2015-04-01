@@ -1,0 +1,71 @@
+from rest_framework import serializers
+from policies import models
+import json
+
+class Attribute_typeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Attribute_type
+        fields = ('description',)
+
+class OperatorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Operator
+        fields = ('description',)
+
+class Cloud_platformSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Cloud_platform
+        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_types')
+
+class Cloud_providerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Cloud_provider
+        fields = ('description', 'cloud_platform')
+
+class PolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Policy
+        fields = ('description', 'cloud_provider', 'external_policy_ref', 'external_policy')
+
+class And_ruleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.And_rule
+        fields = ('policy', 'description', 'enabled', 'conditions')
+
+class ConditionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Condition
+        fields = ('negated', 'attribute_type', 'attribute', 'operator', 'value', 'description')
+
+class OpenstackPolicySerializer(serializers.ModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(OpenstackPolicySerializer, self).__init__(*args, **kwargs)
+        print("init")
+        #print(args)
+        #print(kwargs)
+
+    def create(self, data):
+        print("create")
+        print(data)
+        #content = data.pop('content')
+        return models.Policy.objects.create(**data)
+
+    def update(self, instance, data):
+        print("update")
+        instance.description = data.get('description', instance.description)
+        instance.cloud_provider = data.get('cloud_provider', instance.cloud_provider)
+        instance.external_policy_ref = data.get('external_policy_ref', instance.external_policy_ref)
+        instance.external_policy = data.get('external_policy', instance.external_policy)
+        instance.save()
+        #newline = ""
+        #for line in instance.external_policy.splitlines():
+        #    newline = newline + line.rstrip('\r\n')
+        #ext_pol=json.loads(newline)
+        ext_pol=json.loads(instance.external_policy)
+        print(ext_pol)
+        return instance
+
+class PolicyUploadSerializer(OpenstackPolicySerializer):
+    class Meta:
+        model = models.Policy
+        fields = ('description', 'cloud_provider', 'external_policy_ref', 'external_policy')

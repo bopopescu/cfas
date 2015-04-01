@@ -14,23 +14,24 @@ class Cloud_platform(models.Model):
 
 class Cloud_provider(models.Model):
     description = models.CharField(max_length=255)
-    cloud_platform_id = models.ForeignKey(Cloud_platform)
+    cloud_platform = models.ForeignKey(Cloud_platform)
 
 class Policy(models.Model):
     description = models.CharField(max_length=255)
-    cloud_provider_id = models.ForeignKey(Cloud_provider)
-    external_policy_id = models.CharField(max_length=255)
+    cloud_provider = models.ForeignKey(Cloud_provider)
+    external_policy_ref = models.CharField(max_length=255, default='')
+    external_policy = models.TextField()
 
 class Condition(models.Model):
     negated = models.BooleanField(default=False)
-    attribute_type_id = models.ForeignKey(Attribute_type)
+    attribute_type = models.ForeignKey(Attribute_type)
     attribute = models.CharField(max_length=255)
-    operator_id = models.ForeignKey(Operator)
+    operator = models.ForeignKey(Operator)
     value = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
 class And_rule(models.Model):
-    policy_id = models.ForeignKey(Policy)
+    policy = models.ForeignKey(Policy)
     description = models.CharField(max_length=255)
     enabled = models.BooleanField(default=True)
     conditions = models.ManyToManyField(Condition)
