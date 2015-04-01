@@ -92,7 +92,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
             right = value[value.find(' and ')+5:]
             subject_rules_conds_l = self.parse_subrules(attr, left, subject_rules, conds, {})
             subject_rules_conds_r = self.parse_subrules(attr, right, subject_rules, conds, {})
-            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") and ("+subject_rules_conds_r[attr]+")"
+            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") & ("+subject_rules_conds_r[attr]+")"
 
         # ( -L- OR -R- )
         elif (' or ' in value):
@@ -100,20 +100,20 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
             right = value[value.find(' or ')+4:]
             subject_rules_conds_l = self.parse_subrules(attr, left, subject_rules, conds, {})
             subject_rules_conds_r = self.parse_subrules(attr, right, subject_rules, conds, {})
-            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") or ("+subject_rules_conds_r[attr]+")"
+            subject_rules_conds[attr] = "("+subject_rules_conds_l[attr]+") | ("+subject_rules_conds_r[attr]+")"
 
         # ( COND:VALUE )
         elif (':' in value):
             left = value[:value.find(':')]
             right = value[value.find(':')+1:]
             if left == "rule":
-                subject_rules_conds = self.parse_subrules(attr, subject_rules[right], subject_rules, conds, {})
+                subject_rules_conds = self.parse_subrules(attr, subject_rules[right], subject_rules, conds, subject_rules_conds)
             else:
                 entry = {'attr_type':'S', 'attr': left, 'op':'=', 'value': right}
                 if entry not in conds:
                     print("Error. Condition not found: "+entry)
                 #print (str(conds.index(entry))+" - "+str(entry))
-                subject_rules_conds[attr] = "C"+str(conds.index(entry))
+                subject_rules_conds[attr] = "c"+str(conds.index(entry))
         else:
             print("bad condition: "+value)
         return subject_rules_conds
@@ -156,6 +156,18 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
 
         print(conds)
         print(subject_rules_conds)
+
+        # Define global variables for each condition as a boolean expression
+        gbl = globals()
+        for i in range(len(conds)):
+            var = "c"+str(i)
+            gbl[var] = exprvar(var)
+
+        # Define expression based on subject rules
+        for rk, rv in subject_rules_conds.items():
+            gbl[rk] = eval(rv)
+
+        print(vo_admin.to_dnf())
 
         return instance
 
