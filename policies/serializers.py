@@ -245,29 +245,38 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
 
             # Only consider policy rules
             if ':' in r[0]:
-                # Insert the AND Rule for the current policy rule
-                data = {
-                         "policy": instance,
-                         "description": r[0],
-                         "enabled": True,
-                       }
-                #print(data)
-                models.And_rule.objects.create(**data)
-
-                # Retrieve the AND Rule entry
-                ar = models.And_rule.objects.get(description = r[0])
-
+                r1 = str(r[1]).strip()
+                r1 = re.sub(' ', '', r1)
+                #print("R1:"+r1)
                 # Add the conditions
-
-                if "Or(" == str(r[1])[0:3]:
-                    s = str(r[1])[3:-1]
-                    ands = s.split("And")
+                if "Or(" == r1[0:3]:
+                    s = r1[3:-1]
+                    #print("OR:"+s)
+                    s = s.strip('And') # Remove the And in the beginning of the string
+                    ands = s.split(",And") # Split using the ,And
+                    #print("AS:"+str(ands))
+                    count = 0
                     for a in ands:
+                        #print("A:"+a)
+                        count = count + 1
+                        # Insert the AND Rule for the current policy rule
+                        data = {
+                                 "policy": instance,
+                                 "description": r[0]+":"+str(count),
+                                 "enabled": True,
+                               }
+                        #print(data)
+                        models.And_rule.objects.create(**data)
+
+                        # Retrieve the AND Rule entry
+                        ar = models.And_rule.objects.get(description = r[0]+":"+str(count))
+
                         cs = a.split(",")
+                        print("CS:"+str(cs))
                         conditions = []
                         for c in cs:
-                            c = c.strip().strip(',').strip('(').strip(')').strip('c')
-                            #print(c)
+                            c = re.sub('[,()c]','',c)
+                            print("C:"+c)
                             if (c != "") and c is not None:
                                 c = int(float(c))
                                 cd = conds[c]
@@ -275,13 +284,26 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                                 cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
                                 ar.conditions.add(cd)
 
-                elif "And(" == str(r[1])[0:4]:
-                    s = str(r[1])[4:-1]
+                elif "And(" == r1[0:4]:
+                    s = r1[4:-1]
+                    #print("A:"+s)
                     cs = s.split(",")
                     conditions = []
+                    # Insert the AND Rule for the current policy rule
+                    data = {
+                             "policy": instance,
+                             "description": r[0],
+                             "enabled": True,
+                           }
+                    #print(data)
+                    models.And_rule.objects.create(**data)
+
+                    # Retrieve the AND Rule entry
+                    ar = models.And_rule.objects.get(description = r[0])
+
                     for c in cs:
-                        c = c.strip().strip(',').strip('(').strip(')').strip('c')
-                        #print(c)
+                        c = re.sub('[,()c]','',c)
+                        #print("C:"+c)
                         if (c != "") and c is not None:
                             c = int(float(c))
                             cd = conds[c]
@@ -292,9 +314,22 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                 else:
                     print ("OTHER: Error!?")
                     conditions = []
-                    c = str(r[1])
-                    c = c.strip().strip(',').strip('(').strip(')').strip('c')
+                    c = r1
+                    c = strip(',').strip('(').strip(')').strip('c')
                     print(c)
+
+                    # Insert the AND Rule for the current policy rule
+                    data = {
+                             "policy": instance,
+                             "description": r[0],
+                             "enabled": True,
+                           }
+                    #print(data)
+                    models.And_rule.objects.create(**data)
+
+                    # Retrieve the AND Rule entry
+                    ar = models.And_rule.objects.get(description = r[0])
+
                     if (c != "") and c is not None:
                         c = int(float(c))
                         cd = conds[c]
