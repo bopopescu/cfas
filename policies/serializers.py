@@ -213,11 +213,13 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         #print(conds)
         #print(rules_conds)
         
-        # Delete all and rules from the database
-        models.And_rule.objects.all().delete()
-
-        # Delete all conditions from the database
-        models.Condition.objects.all().delete()
+        # Delete all conditions from the database for a Policy ID
+        ands = models.And_rule.objects.filter(policy = instance.id)
+        for a in ands:
+            models.Condition.objects.filter(and_rule = a.id).delete()
+        
+        # Delete all and rules from the database for a Policy ID
+        models.And_rule.objects.filter(policy = instance.id).delete()
 
         # Create conditions in the database
         for c in conds:
