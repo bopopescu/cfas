@@ -272,11 +272,11 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                         ar = models.And_rule.objects.get(description = r[0]+":"+str(count))
 
                         cs = a.split(",")
-                        print("CS:"+str(cs))
+                        #print("CS:"+str(cs))
                         conditions = []
                         for c in cs:
                             c = re.sub('[,()c]','',c)
-                            print("C:"+c)
+                            #print("C:"+c)
                             if (c != "") and c is not None:
                                 c = int(float(c))
                                 cd = conds[c]
