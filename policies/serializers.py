@@ -170,9 +170,9 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
 #        print(rules)
         
         # Delete all conditions from the database for a Policy ID
-        ands = models.And_rule.objects.filter(policy = instance.id)
-        for a in ands:
-            models.Condition.objects.filter(and_rule = a.id).delete()
+#        ands = models.And_rule.objects.filter(policy = instance.id)
+#        for a in ands:
+#            models.Condition.objects.extra(where=["and_rule = a.id","NOT and_rule != a.id"]).delete()
         
         # Delete all and rules from the database for a Policy ID
         models.And_rule.objects.filter(policy = instance.id).delete()
