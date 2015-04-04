@@ -88,12 +88,18 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
     def parse_rules(self, attr, value, conds, rules):
         left = attr[:attr.find(':')]            # Split attribute by the first colon (:) occurence (service:action)
         right = attr[attr.find(':')+1:]
+
+        value = value.replace(' and ',' & ')
+        value = value.replace(' or ',' | ')
+        value = value.replace('not ','~')
+        value = value.replace('not','~')
+
         service = -1
         action = -1
         i = 0;
         for c in conds:
-            at = c['attr'].replace('\%','\\\%')
-            vl = c['value'].replace('\%','\\\%')
+            at = c['attr'].replace('\%','\\\%').replace('\.','\\\.')
+            vl = c['value'].replace('\%','\\\%').replace('\.','\\\.')
             value = value.replace(at+':'+vl, 'c'+str(i))
             if c['value'] == left:
                 service = i
@@ -102,12 +108,13 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
             i = i + 1
         if service >= 0 and action >= 0:
             if value == '':
-                rules[attr] = 'c'+str(service)+' and '+'c'+str(action)
+                rules[attr] = 'c'+str(service)+' & '+'c'+str(action)
             else:
-                rules[attr] = 'c'+str(service)+' and '+'c'+str(action)+' and ('+value+')'
+                rules[attr] = 'c'+str(service)+' & '+'c'+str(action)+' & ('+value+')'
         else:
             print ("Problem... Didn't find service or action")
             rules[attr] = value
+
         return rules
 
     def parse(self, ext_pol):
@@ -159,8 +166,8 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         # Tranform rules to DNF
         rules = self.to_dnf(conds,rules)
 
-        #print(conds)
-        #print(rules)
+#        print(conds)
+#        print(rules)
         
         # Delete all conditions from the database for a Policy ID
         ands = models.And_rule.objects.filter(policy = instance.id)
@@ -184,10 +191,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                       "value": c['value'],
                       "description": c['attr']+c['op']+c['value']
                   }
-            #print(data)
         
-            print(c['attr']+c['op']+c['value'])
-
             num = models.Condition.objects.filter(description = c['attr']+c['op']+c['value']).count()
             if num == 0:
                 models.Condition.objects.create(**data)
