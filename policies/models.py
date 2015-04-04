@@ -1,6 +1,6 @@
 from django.db import models
 
-class Attribute_type(models.Model):
+class Attribute_category(models.Model):
     description = models.CharField(max_length=255)
 
 class Operator(models.Model):
@@ -10,7 +10,7 @@ class Cloud_platform(models.Model):
     description = models.CharField(max_length=255)
     accept_negated_conditions = models.BooleanField(default=False)
     operators = models.ManyToManyField(Operator)
-    attribute_types = models.ManyToManyField(Attribute_type)
+    attribute_category = models.ManyToManyField(Attribute_category)
 
 class Cloud_provider(models.Model):
     description = models.CharField(max_length=255)
@@ -19,12 +19,10 @@ class Cloud_provider(models.Model):
 class Policy(models.Model):
     description = models.CharField(max_length=255)
     cloud_provider = models.ForeignKey(Cloud_provider)
-    external_policy_ref = models.CharField(max_length=255, default='')
     external_policy = models.TextField()
 
 class Condition(models.Model):
-    negated = models.BooleanField(default=False)
-    attribute_type = models.ForeignKey(Attribute_type)
+    attribute_category = models.ForeignKey(Attribute_category)
     attribute = models.CharField(max_length=255)
     operator = models.ForeignKey(Operator)
     value = models.CharField(max_length=255)

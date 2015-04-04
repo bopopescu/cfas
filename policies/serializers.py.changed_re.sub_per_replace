@@ -50,18 +50,21 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
     # Extract a list of conditions from the policy JSON object
     def parse_conds(self, attr, value, policy, conds, rules):
         # Add the regular conditions (from the values) and create the rules array
-        if (':' in attr) and (attr not in rules):  # If it is a policy rule and there is no rule entry...
+        if ':' in attr:                            # If it is a policy rule...
             rules[attr] = value                    # Add an entry into the rules array for the value
         value = value.replace('not', '')           # Remove all the 'not's from the value
+#        value = re.sub('not', '', value)           # Remove all the 'not's from the value
         if(attr != '' and value != ''):            # Ignore empty lines
             values = re.split(" and | or ", value) # Use ' and ' or ' or ' to split the value
             for v in values:                       # Loop for all "rules" in value 
                 v = v.strip('(').strip(')')        # Remove the parentheses in the rule
                 v = v.replace(' ', '')             # Remove all spaces in the rule
+#                v = re.sub(' ', '', v)             # Remove all spaces in the rule
                 if v[:5] == 'rule:':               # If the rules refers to another rule...
                     newv = policy[v[5:]]           # Replace the "rule" by its reference
                     if ':' in attr:                                                    # If it is a police rule...
                         rules[attr] = rules[attr].replace(v, newv)                     # Replace the rule in the rules array
+#                        rules[attr] = re.sub(v, newv, rules[attr])                     # Replace the rule in the rules array
                     conds, rules = self.parse_conds(attr, newv, policy, conds, rules)  # Recursive call with the new "rule" as value 
                                                                                        #     (it can have rules again into the reference)
                 else:                                                                  # If the rules don't refer to any other rule...
@@ -86,47 +89,46 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         return conds, rules                       # Return the list of conditions and the list of rules
 
     def parse_rules(self, attr, value, conds, rules):
-        left = attr[:attr.find(':')]            # Split attribute by the first colon (:) occurence (service:action)
-        right = attr[attr.find(':')+1:]
-        service = -1
-        action = -1
         i = 0;
+        print(value)
         for c in conds:
             at = c['attr'].replace('\%','\\\%')
             vl = c['value'].replace('\%','\\\%')
             value = value.replace(at+':'+vl, 'c'+str(i))
-            if c['value'] == left:
-                service = i
-            if c['value'] == right:
-                action = i
             i = i + 1
-        if service >= 0 and action >= 0:
-            if value == '':
-                rules[attr] = 'c'+str(service)+' and '+'c'+str(action)
-            else:
-                rules[attr] = 'c'+str(service)+' and '+'c'+str(action)+' and ('+value+')'
-        else:
-            print ("Problem... Didn't find service or action")
-            rules[attr] = value
+        rules[attr] = value
+        print(value)
         return rules
 
     def parse(self, ext_pol):
 
+        # Read rules and extract the conditions
+        # eg.: [{"attr_category": "S", "attr": "role", "op": "=", "value", "admin"}, ...]
         conds = []
         rules = {}
 
-        # Read rules and extract the conditions
-        # eg.: [{"attr_category": "S", "attr": "role", "op": "=", "value", "admin"}, ...]
-        # Also prepares a dictionary of rules
         for attr, value in ext_pol.items():
             conds, rules = self.parse_conds(attr, value, ext_pol, conds, rules)
 
-        # Convert the dictionary in terms of conditions (C0, C1, ...)
+        print(conds)
+        print(rules)
+
+        # Read rules and extract the logical expressions
         # eg.: {"admin_required": "C1 OR C2", ...}
-        # Add service and action rules
+
         for attr, value in rules.items():
             rules = self.parse_rules(attr, value, conds, rules)
 
+        print(rules)
+
+        '''
+        for attr, value in ext_pol.items():
+            rules_conds = self.parse_rules(attr, value, ext_pol, conds, rules_conds)
+
+        # Add service and action rules
+        for attr, value in ext_pol.items():
+            rules_conds = self.parse_polrules(attr, value, ext_pol, conds, rules_conds)
+        '''
         return conds, rules
 
     def to_dnf(self, conds, rules):
@@ -156,6 +158,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         # Parses its content.
         conds, rules = self.parse(ext_pol)
 
+        '''
         # Tranform rules to DNF
         rules = self.to_dnf(conds,rules)
 
@@ -178,6 +181,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
             op = models.Operator.objects.get(description = c['op'])
 
             data = {
+                      "negated": False,
                       "attribute_category": at,
                       "attribute": c['attr'],
                       "operator": op,
@@ -271,7 +275,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                     print ("OTHER: Error!?")
                     conditions = []
                     c = r1
-                    c = c.strip(',').strip('(').strip(')').strip('c')
+                    c = strip(',').strip('(').strip(')').strip('c')
                     print(c)
 
                     # Insert the AND Rule for the current policy rule
@@ -291,7 +295,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                         cd = conds[c]
                         #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
                         cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
-                        ar.conditions.add(cd)
+                        ar.conditions.add(cd)'''
         return instance
 
     def create(self, data):

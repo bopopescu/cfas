@@ -11,9 +11,9 @@ from policies.serializers import OpenstackPolicySerializer
 #        model = User
 #        fields = ('url', 'username', 'email', 'is_staff')
 
-class Attribute_typeSerializer(serializers.ModelSerializer):
+class Attribute_categorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Attribute_type
+        model = models.Attribute_category
         fields = ('description',)
 
 class OperatorSerializer(serializers.ModelSerializer):
@@ -24,7 +24,7 @@ class OperatorSerializer(serializers.ModelSerializer):
 class Cloud_platformSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Cloud_platform
-        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_types')
+        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_categorys')
 
 class Cloud_providerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,7 +34,7 @@ class Cloud_providerSerializer(serializers.ModelSerializer):
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description', 'cloud_provider', 'external_policy_ref', 'external_policy')
+        fields = ('description', 'cloud_provider', 'external_policy')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -44,21 +44,21 @@ class And_ruleSerializer(serializers.ModelSerializer):
 class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
-        fields = ('negated', 'attribute_type', 'attribute', 'operator', 'value', 'description')
+        fields = ('negated', 'attribute_category', 'attribute', 'operator', 'value', 'description')
 
 class PolicyUploadSerializer(OpenstackPolicySerializer):
     class Meta:
         model = models.Policy
-        fields = ('description', 'cloud_provider', 'external_policy_ref', 'external_policy')
+        fields = ('description', 'cloud_provider', 'external_policy')
 
 # ViewSets define the view behavior.
 #class UserViewSet(viewsets.ModelViewSet):
 #    queryset = User.objects.all()
 #    serializer_class = UserSerializer
 
-class Attribute_typeViewSet(viewsets.ModelViewSet):
-    queryset = models.Attribute_type.objects.all()
-    serializer_class = Attribute_typeSerializer
+class Attribute_categoryViewSet(viewsets.ModelViewSet):
+    queryset = models.Attribute_category.objects.all()
+    serializer_class = Attribute_categorySerializer
 
 class OperatorViewSet(viewsets.ModelViewSet):
     queryset = models.Operator.objects.all()
@@ -92,7 +92,7 @@ class ConditionViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 #router.register(r'users', views.UserViewSet)
 #router.register(r'groups', views.GroupViewSet)
-router.register(r'attribute_type', views.Attribute_typeViewSet)
+router.register(r'attribute_category', views.Attribute_categoryViewSet)
 router.register(r'operator', views.OperatorViewSet)
 router.register(r'cloud_platform', views.Cloud_platformViewSet)
 router.register(r'cloud_provider', views.Cloud_providerViewSet)

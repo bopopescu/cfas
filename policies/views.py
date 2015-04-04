@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from policies import models
-from policies.serializers import Attribute_typeSerializer, OperatorSerializer, PolicySerializer
+from policies.serializers import Attribute_categorySerializer, OperatorSerializer, PolicySerializer
 from policies.serializers import Cloud_platformSerializer, Cloud_providerSerializer
 from policies.serializers import And_ruleSerializer, ConditionSerializer, PolicyUploadSerializer
 
@@ -8,9 +8,9 @@ from policies.serializers import And_ruleSerializer, ConditionSerializer, Policy
 
 # Create your views here.
 
-class Attribute_typeViewSet(viewsets.ModelViewSet):
-    queryset = models.Attribute_type.objects.all()
-    serializer_class = Attribute_typeSerializer
+class Attribute_categoryViewSet(viewsets.ModelViewSet):
+    queryset = models.Attribute_category.objects.all()
+    serializer_class = Attribute_categorySerializer
 
 class OperatorViewSet(viewsets.ModelViewSet):
     queryset = models.Operator.objects.all()
