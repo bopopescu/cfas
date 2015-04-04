@@ -27,15 +27,17 @@ class Cloud_providerViewSet(viewsets.ModelViewSet):
 class PolicyViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
     serializer_class = PolicySerializer
+    def perform_destroy(self, instance):
+        # Delete And rules for this policy
+        models.And_rule.objects.filter(policy = instance.id).delete()
+        instance.delete()
 
 class PolicyUploadViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
     serializer_class = PolicyUploadSerializer
     def perform_destroy(self, instance):
-
         # Delete And rules for this policy
         models.And_rule.objects.filter(policy = instance.id).delete()
-
         instance.delete()
 
 class And_ruleViewSet(viewsets.ModelViewSet):

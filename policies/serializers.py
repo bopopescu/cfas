@@ -146,14 +146,9 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
 
         return rules
 
-    def update(self, instance, data):
-        instance.description = data.get('description', instance.description)
-        instance.cloud_provider = data.get('cloud_provider', instance.cloud_provider)
-        instance.external_policy = data.get('external_policy', instance.external_policy)
-        instance.save()
-
+    def create_and_rules_and_conditions(self, instance, external_policy):
         # Load the variable of the external policy (policy.json content)
-        ext_pol=json.loads(instance.external_policy)
+        ext_pol=json.loads(external_policy)
 
         # Parses its content.
         conds, rules = self.parse(ext_pol)
@@ -283,13 +278,28 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                         #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
                         cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
                         ar.conditions.add(cd)
+
+    def update(self, instance, data):
+        instance.description = data.get('description', instance.description)
+        instance.cloud_provider = data.get('cloud_provider', instance.cloud_provider)
+        instance.external_policy = data.get('external_policy', instance.external_policy)
+        instance.save()
+
+        # Create And_rules and Conditions for this Policy based on the External Policy file
+        self.create_and_rules_and_conditions(instance, instance.external_policy)
+
         return instance
 
     def create(self, data):
         #print(data)
         #{'external_policy': '{}', 'description': 'cinder', 'cloud_provider': <Cloud_provider: Cloud_provider object>}
 
-        return models.Policy.objects.create(**data)
+        instance = models.Policy.objects.create(**data)
+        
+        # Create And_rules and Conditions for this Policy based on the External Policy file
+        self.create_and_rules_and_conditions(instance, data['external_policy'])
+
+        return instance
 
 class PolicyUploadSerializer(OpenstackPolicySerializer):
     class Meta:
