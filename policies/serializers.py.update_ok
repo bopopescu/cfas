@@ -161,6 +161,14 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         # Tranform rules to DNF
         rules = self.to_dnf(conds,rules)
 
+        # Delete all conditions from the database for a Policy ID
+#        ands = models.And_rule.objects.filter(policy = instance.id)
+#        for a in ands:
+#            models.Condition.objects.extra(where=["and_rule = a.id","NOT and_rule != a.id"]).delete()
+        
+        # Delete all and rules from the database for a Policy ID
+        models.And_rule.objects.filter(policy = instance.id).delete()
+
         # Create conditions in the database
         for c in conds:
             #print(c) #{'value': 'list_policies', 'attr': 'action', 'op': '=', 'attr_category': 'A'}
@@ -181,9 +189,6 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                 models.Condition.objects.create(**data)
 
             data = {}
-
-        # Delete all and rules from the database for a Policy ID
-        models.And_rule.objects.filter(policy = instance.id).delete()
 
         # Create and_rules in database
         for r in rules.items():

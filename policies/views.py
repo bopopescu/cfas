@@ -31,6 +31,12 @@ class PolicyViewSet(viewsets.ModelViewSet):
 class PolicyUploadViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
     serializer_class = PolicyUploadSerializer
+    def perform_destroy(self, instance):
+
+        # Delete And rules for this policy
+        models.And_rule.objects.filter(policy = instance.id).delete()
+
+        instance.delete()
 
 class And_ruleViewSet(viewsets.ModelViewSet):
     queryset = models.And_rule.objects.all()
