@@ -1,35 +1,39 @@
 from django.db import models
 
-class Attribute_category(models.Model):
+class Attribute_categories(models.Model):
     description = models.CharField(max_length=255)
 
-class Operator(models.Model):
+class Operators(models.Model):
     description = models.CharField(max_length=255)
 
-class Cloud_platform(models.Model):
+class Cloud_platforms(models.Model):
     description = models.CharField(max_length=255)
     accept_negated_conditions = models.BooleanField(default=False)
-    operators = models.ManyToManyField(Operator)
-    attribute_category = models.ManyToManyField(Attribute_category)
+    operators = models.ManyToManyField(Operators)
+    attribute_categories = models.ManyToManyField(Attribute_categories)
 
-class Cloud_provider(models.Model):
+class Cloud_providers(models.Model):
     description = models.CharField(max_length=255)
-    cloud_platform = models.ForeignKey(Cloud_platform)
+    cloud_platform = models.ForeignKey(Cloud_platforms)
 
-class Policy(models.Model):
+class Policies(models.Model):
     description = models.CharField(max_length=255)
-    cloud_provider = models.ForeignKey(Cloud_provider)
+    cloud_provider = models.ForeignKey(Cloud_providers)
     external_policy = models.TextField()
 
-class Condition(models.Model):
-    attribute_category = models.ForeignKey(Attribute_category)
+class Conditions(models.Model):
+    attribute_category = models.ForeignKey(Attribute_categories)
     attribute = models.CharField(max_length=255)
-    operator = models.ForeignKey(Operator)
+    operator = models.ForeignKey(Operators)
     value = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class And_rule(models.Model):
-    policy = models.ForeignKey(Policy)
+class And_rules(models.Model):
+    policy = models.ForeignKey(Policies)
     description = models.CharField(max_length=255)
     enabled = models.BooleanField(default=True)
-    conditions = models.ManyToManyField(Condition)
+    conditions = models.ManyToManyField(Conditions)
+
+class Attribute_hierarchy(models.Model):
+    superior = models.CharField(max_length=255)
+    subordinate = models.CharField(max_length=255)

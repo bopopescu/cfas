@@ -4,44 +4,44 @@ from pyeda.inter import *
 import json
 import re
 
-class Attribute_categorySerializer(serializers.ModelSerializer):
+class Attribute_categoriesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Attribute_category
+        model = models.Attribute_categories
         fields = ('description',)
 
-class OperatorSerializer(serializers.ModelSerializer):
+class OperatorsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Operator
+        model = models.Operators
         fields = ('description',)
 
-class Cloud_platformSerializer(serializers.ModelSerializer):
+class Cloud_platformsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Cloud_platform
-        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_categorys')
+        model = models.Cloud_platforms
+        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_categories')
 
-class Cloud_providerSerializer(serializers.ModelSerializer):
+class Cloud_providersSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Cloud_provider
+        model = models.Cloud_providers
         fields = ('description', 'cloud_platform')
 
-class PolicySerializer(serializers.ModelSerializer):
+class PoliciesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Policy
+        model = models.Policies
         fields = ('description', 'cloud_provider', 'external_policy')
 
-class And_ruleSerializer(serializers.ModelSerializer):
+class And_rulesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.And_rule
-        fields = ('policy', 'description', 'enabled', 'conditions')
+        model = models.And_rules
+        fields = ('policies', 'description', 'enabled', 'conditions')
 
-class ConditionSerializer(serializers.ModelSerializer):
+class ConditionsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Condition
+        model = models.Conditions
         fields = ('attribute_category', 'attribute', 'operator', 'value', 'description')
 
-class OpenstackPolicySerializer(serializers.ModelSerializer):
+class OpenstackPoliciesSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
-        super(OpenstackPolicySerializer, self).__init__(*args, **kwargs)
+        super(OpenstackPoliciesSerializer, self).__init__(*args, **kwargs)
 
     # Extract a list of conditions from the policy JSON object
     def parse_conds(self, attr, value, policy, conds, rules):
@@ -160,8 +160,8 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         for c in conds:
             #print(c) #{'value': 'list_policies', 'attr': 'action', 'op': '=', 'attr_category': 'A'}
 
-            at = models.Attribute_category.objects.get(description = c['attr_category'])
-            op = models.Operator.objects.get(description = c['op'])
+            at = models.Attribute_categories.objects.get(description = c['attr_category'])
+            op = models.Operators.objects.get(description = c['op'])
 
             data = {
                       "attribute_category": at,
@@ -171,14 +171,14 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                       "description": c['attr']+c['op']+c['value']
                   }
         
-            num = models.Condition.objects.filter(description = c['attr']+c['op']+c['value']).count()
+            num = models.Conditions.objects.filter(description = c['attr']+c['op']+c['value']).count()
             if num == 0:
-                models.Condition.objects.create(**data)
+                models.Conditions.objects.create(**data)
 
             data = {}
 
         # Delete all and rules from the database for a Policy ID
-        models.And_rule.objects.filter(policy = instance.id).delete()
+        models.And_rules.objects.filter(policy = instance.id).delete()
 
         # Create and_rules in database
         for r in rules.items():
@@ -208,10 +208,10 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                                  "enabled": True,
                                }
                         #print(data)
-                        models.And_rule.objects.create(**data)
+                        models.And_rules.objects.create(**data)
 
                         # Retrieve the AND Rule entry
-                        ar = models.And_rule.objects.get(description = r[0]+":"+str(count))
+                        ar = models.And_rules.objects.get(description = r[0]+":"+str(count))
 
                         cs = a.split(",")
                         #print("CS:"+str(cs))
@@ -223,7 +223,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                                 c = int(float(c))
                                 cd = conds[c]
                                 #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
-                                cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                                cd = models.Conditions.objects.get(description = cd['attr']+cd['op']+cd['value'])
                                 ar.conditions.add(cd)
 
                 elif "And(" == r1[0:4]:
@@ -238,10 +238,10 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                              "enabled": True,
                            }
                     #print(data)
-                    models.And_rule.objects.create(**data)
+                    models.And_rules.objects.create(**data)
 
                     # Retrieve the AND Rule entry
-                    ar = models.And_rule.objects.get(description = r[0])
+                    ar = models.And_rules.objects.get(description = r[0])
 
                     for c in cs:
                         c = re.sub('[,()c]','',c)
@@ -250,7 +250,7 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                             c = int(float(c))
                             cd = conds[c]
                             #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
-                            cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                            cd = models.Conditions.objects.get(description = cd['attr']+cd['op']+cd['value'])
                             ar.conditions.add(cd)
    
                 else:
@@ -267,16 +267,16 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
                              "enabled": True,
                            }
                     #print(data)
-                    models.And_rule.objects.create(**data)
+                    models.And_rules.objects.create(**data)
 
                     # Retrieve the AND Rule entry
-                    ar = models.And_rule.objects.get(description = r[0])
+                    ar = models.And_rules.objects.get(description = r[0])
 
                     if (c != "") and c is not None:
                         c = int(float(c))
                         cd = conds[c]
                         #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
-                        cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
+                        cd = models.Conditions.objects.get(description = cd['attr']+cd['op']+cd['value'])
                         ar.conditions.add(cd)
 
     def update(self, instance, data):
@@ -294,14 +294,14 @@ class OpenstackPolicySerializer(serializers.ModelSerializer):
         #print(data)
         #{'external_policy': '{}', 'description': 'cinder', 'cloud_provider': <Cloud_provider: Cloud_provider object>}
 
-        instance = models.Policy.objects.create(**data)
+        instance = models.Policies.objects.create(**data)
         
         # Create And_rules and Conditions for this Policy based on the External Policy file
         self.create_and_rules_and_conditions(instance, data['external_policy'])
 
         return instance
 
-class PolicyUploadSerializer(OpenstackPolicySerializer):
+class PoliciesUploadSerializer(OpenstackPoliciesSerializer):
     class Meta:
-        model = models.Policy
+        model = models.Policies
         fields = ('description', 'cloud_provider', 'external_policy')

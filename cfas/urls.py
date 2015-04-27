@@ -3,7 +3,7 @@ from django.contrib import admin
 #from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
 from policies import views, models
-from policies.serializers import OpenstackPolicySerializer
+from policies.serializers import OpenstackPoliciesSerializer
 
 # Serializers define the API representation.
 #class UserSerializer(serializers.ModelSerializer):
@@ -11,44 +11,44 @@ from policies.serializers import OpenstackPolicySerializer
 #        model = User
 #        fields = ('url', 'username', 'email', 'is_staff')
 
-class Attribute_categorySerializer(serializers.ModelSerializer):
+class Attribute_categoriesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Attribute_category
+        model = models.Attribute_categories
         fields = ('description',)
 
-class OperatorSerializer(serializers.ModelSerializer):
+class OperatorsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Operator
+        model = models.Operators
         fields = ('description',)
 
-class Cloud_platformSerializer(serializers.ModelSerializer):
+class Cloud_platformsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Cloud_platform
-        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_categorys')
+        model = models.Cloud_platforms
+        fields = ('description', 'accept_negated_conditions', 'operators', 'attribute_categories')
 
-class Cloud_providerSerializer(serializers.ModelSerializer):
+class Cloud_providersSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Cloud_provider
+        model = models.Cloud_providers
         fields = ('description', 'cloud_platform')
 
-class PolicySerializer(serializers.ModelSerializer):
+class PoliciesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Policy
+        model = models.Policies
         fields = ('description', 'cloud_provider', 'external_policy')
 
-class And_ruleSerializer(serializers.ModelSerializer):
+class And_rulesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.And_rule
+        model = models.And_rules
         fields = ('policy', 'description', 'enabled', 'conditions')
 
-class ConditionSerializer(serializers.ModelSerializer):
+class ConditionsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Condition
+        model = models.Conditions
         fields = ('negated', 'attribute_category', 'attribute', 'operator', 'value', 'description')
 
-class PolicyUploadSerializer(OpenstackPolicySerializer):
+class PoliciesUploadSerializer(OpenstackPoliciesSerializer):
     class Meta:
-        model = models.Policy
+        model = models.Policies
         fields = ('description', 'cloud_provider', 'external_policy')
 
 # ViewSets define the view behavior.
@@ -56,50 +56,50 @@ class PolicyUploadSerializer(OpenstackPolicySerializer):
 #    queryset = User.objects.all()
 #    serializer_class = UserSerializer
 
-class Attribute_categoryViewSet(viewsets.ModelViewSet):
-    queryset = models.Attribute_category.objects.all()
-    serializer_class = Attribute_categorySerializer
+class Attribute_categoriesViewSet(viewsets.ModelViewSet):
+    queryset = models.Attribute_categories.objects.all()
+    serializer_class = Attribute_categoriesSerializer
 
-class OperatorViewSet(viewsets.ModelViewSet):
-    queryset = models.Operator.objects.all()
-    serializer_class = OperatorSerializer
+class OperatorsViewSet(viewsets.ModelViewSet):
+    queryset = models.Operators.objects.all()
+    serializer_class = OperatorsSerializer
 
-class Cloud_platformViewSet(viewsets.ModelViewSet):
-    queryset = models.Cloud_platform.objects.all()
-    serializer_class = Cloud_platformSerializer
+class Cloud_platformsViewSet(viewsets.ModelViewSet):
+    queryset = models.Cloud_platforms.objects.all()
+    serializer_class = Cloud_platformsSerializer
 
-class Cloud_providerViewSet(viewsets.ModelViewSet):
-    queryset = models.Cloud_provider.objects.all()
-    serializer_class = Cloud_providerSerializer
+class Cloud_providersViewSet(viewsets.ModelViewSet):
+    queryset = models.Cloud_providers.objects.all()
+    serializer_class = Cloud_providersSerializer
 
-class PolicyViewSet(viewsets.ModelViewSet):
-    queryset = models.Policy.objects.all()
-    serializer_class = PolicySerializer
+class PoliciesViewSet(viewsets.ModelViewSet):
+    queryset = models.Policies.objects.all()
+    serializer_class = PoliciesSerializer
 
-class PolicyUploadViewSet(viewsets.ModelViewSet):
-    queryset = models.Policy.objects.all()
-    serializer_class = PolicyUploadSerializer
+class PoliciesUploadViewSet(viewsets.ModelViewSet):
+    queryset = models.Policies.objects.all()
+    serializer_class = PoliciesUploadSerializer
 
-class And_ruleViewSet(viewsets.ModelViewSet):
-    queryset = models.And_rule.objects.all()
-    serializer_class = And_ruleSerializer
+class And_rulesViewSet(viewsets.ModelViewSet):
+    queryset = models.And_rules.objects.all()
+    serializer_class = And_rulesSerializer
 
-class ConditionViewSet(viewsets.ModelViewSet):
-    queryset = models.Condition.objects.all()
-    serializer_class = ConditionSerializer
+class ConditionsViewSet(viewsets.ModelViewSet):
+    queryset = models.Conditions.objects.all()
+    serializer_class = ConditionsSerializer
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 #router.register(r'users', views.UserViewSet)
 #router.register(r'groups', views.GroupViewSet)
-router.register(r'attribute_category', views.Attribute_categoryViewSet)
-router.register(r'operator', views.OperatorViewSet)
-router.register(r'cloud_platform', views.Cloud_platformViewSet)
-router.register(r'cloud_provider', views.Cloud_providerViewSet)
-router.register(r'policy', views.PolicyViewSet)
-router.register(r'policy_upload', views.PolicyUploadViewSet)
-router.register(r'and_rule', views.And_ruleViewSet)
-router.register(r'condition', views.ConditionViewSet)
+router.register(r'attribute_categories', views.Attribute_categoriesViewSet)
+router.register(r'operators', views.OperatorsViewSet)
+router.register(r'cloud_platforms', views.Cloud_platformsViewSet)
+router.register(r'cloud_providers', views.Cloud_providersViewSet)
+router.register(r'policies', views.PoliciesViewSet)
+router.register(r'policies_upload', views.PoliciesUploadViewSet)
+router.register(r'and_rules', views.And_rulesViewSet)
+router.register(r'conditions', views.ConditionsViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
