@@ -1,39 +1,35 @@
 from django.db import models
 
-class Attribute_categories(models.Model):
+class Attribute_category(models.Model):
     description = models.CharField(max_length=255)
 
-class Operators(models.Model):
+class Operator(models.Model):
     description = models.CharField(max_length=255)
 
-class Cloud_platforms(models.Model):
+class Cloud_platform(models.Model):
     description = models.CharField(max_length=255)
     accept_negated_conditions = models.BooleanField(default=False)
-    operators = models.ManyToManyField(Operators)
-    attribute_categories = models.ManyToManyField(Attribute_categories)
+    operators = models.ManyToManyField(Operator)
+    attribute_category = models.ManyToManyField(Attribute_category)
 
-class Cloud_providers(models.Model):
+class Cloud_provider(models.Model):
     description = models.CharField(max_length=255)
-    cloud_platform = models.ForeignKey(Cloud_platforms)
+    cloud_platform = models.ForeignKey(Cloud_platform)
 
-class Policies(models.Model):
+class Policy(models.Model):
     description = models.CharField(max_length=255)
-    cloud_provider = models.ForeignKey(Cloud_providers)
+    cloud_provider = models.ForeignKey(Cloud_provider)
     external_policy = models.TextField()
 
-class Conditions(models.Model):
-    attribute_category = models.ForeignKey(Attribute_categories)
+class Condition(models.Model):
+    attribute_category = models.ForeignKey(Attribute_category)
     attribute = models.CharField(max_length=255)
-    operator = models.ForeignKey(Operators)
+    operator = models.ForeignKey(Operator)
     value = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
-class And_rules(models.Model):
-    policy = models.ForeignKey(Policies)
+class And_rule(models.Model):
+    policy = models.ForeignKey(Policy)
     description = models.CharField(max_length=255)
     enabled = models.BooleanField(default=True)
-    conditions = models.ManyToManyField(Conditions)
-
-class Attribute_hierarchy(models.Model):
-    superior = models.CharField(max_length=255)
-    subordinate = models.CharField(max_length=255)
+    conditions = models.ManyToManyField(Condition)
