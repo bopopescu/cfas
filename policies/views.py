@@ -15,11 +15,13 @@ class PolicyViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save(description=self.request.data['description'])
-        openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])
+        if 'policy' in self.request.data:
+            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])
 
     def perform_update(self, serializer):
         instance = serializer.save(description=self.request.data['description'])
-        openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])      
+        if 'policy' in self.request.data:
+            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])
 
     def retrieve(self, request, pk=None):
         resp = {}
