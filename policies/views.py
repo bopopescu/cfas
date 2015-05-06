@@ -32,7 +32,8 @@ class PolicyViewSet(viewsets.ModelViewSet):
             resp['policy']['content'] = openstack_parser.export_openstack_policy(pk)
             return Response(resp)
         except:
-            return Response(resp, 404)
+            resp['detail'] = "Not found."
+            return Response(resp, status=404)
 
     def list(self, request):
         queryset = models.Policy.objects.all()
@@ -53,7 +54,8 @@ class And_ruleViewSet(viewsets.ModelViewSet):
             resp['and_rule'] = serializer.data
             return Response(resp)
         except:
-            return Response(resp, 404)
+            resp['detail'] = "Not found."
+            return Response(resp, status=404)
 
     def list(self, request):
         queryset = models.And_rule.objects.all()
@@ -79,7 +81,8 @@ class ConditionViewSet(viewsets.ModelViewSet):
             resp['condition'] = serializer.data
             return Response(resp)
         except:
-            return Response(resp, 404)
+            resp['detail'] = "Not found."
+            return Response(resp, status=404)
 
     def list(self, request):
         queryset = models.Condition.objects.all()
@@ -93,3 +96,23 @@ class ConditionViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, pk=None):
         return Response("Update is not permited on Conditions", status=405)
+
+    def destroy(self, request, pk=None):
+        refd = False
+        and_rules = models.And_rule.objects.all()
+        for and_rule in and_rules.iterator():
+            serializer = And_ruleSerializer(and_rule)
+            id = int(pk)
+            conds = serializer.data['conditions']
+            if id in conds:
+                refd = True
+                break
+        if refd:
+            return Response("Condition is referenced by one or more And Rules. Can not delete it", status=403)
+        else:
+            try:
+                condition = models.Condition.objects.filter(id=pk).delete()
+                return Response("Condition deleted.", status=204)
+            except:
+                resp['detail'] = "Not found."
+                return Response(resp, status=404)
