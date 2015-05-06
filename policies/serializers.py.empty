@@ -1,8 +1,5 @@
 from rest_framework import serializers
 from policies import models
-from pyeda.inter import *
-import json
-import re
 
 class Attribute_categorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,7 +24,7 @@ class Cloud_providerSerializer(serializers.ModelSerializer):
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description', 'cloud_provider')
+        fields = ('description', 'cloud_provider', 'external_policy')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,3 +35,8 @@ class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
         fields = ('attribute_category', 'attribute', 'operator', 'value', 'description')
+
+#class PolicyUploadSerializer(serializers.OpenstackPolicySerializer):
+#    class Meta:
+#        model = models.Policy
+#        fields = ('description', 'cloud_provider', 'external_policy')

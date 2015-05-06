@@ -10,7 +10,7 @@ class Cloud_platform(models.Model):
     description = models.CharField(max_length=255)
     accept_negated_conditions = models.BooleanField(default=False)
     operators = models.ManyToManyField(Operator)
-    attribute_category = models.ManyToManyField(Attribute_category)
+    attribute_categories = models.ManyToManyField(Attribute_category)
 
 class Cloud_provider(models.Model):
     description = models.CharField(max_length=255)
@@ -19,7 +19,6 @@ class Cloud_provider(models.Model):
 class Policy(models.Model):
     description = models.CharField(max_length=255)
     cloud_provider = models.ForeignKey(Cloud_provider)
-    external_policy = models.TextField()
 
 class Condition(models.Model):
     attribute_category = models.ForeignKey(Attribute_category)

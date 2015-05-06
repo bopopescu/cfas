@@ -3,7 +3,7 @@ from django.contrib import admin
 #from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
 from policies import views, models
-from policies.serializers import OpenstackPolicySerializer
+#from policies.serializers import OpenstackPolicySerializer
 
 # Serializers define the API representation.
 #class UserSerializer(serializers.ModelSerializer):
@@ -34,7 +34,7 @@ class Cloud_providerSerializer(serializers.ModelSerializer):
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description', 'cloud_provider', 'external_policy')
+        fields = ('description', 'cloud_provider')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,11 +45,6 @@ class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
         fields = ('negated', 'attribute_category', 'attribute', 'operator', 'value', 'description')
-
-class PolicyUploadSerializer(OpenstackPolicySerializer):
-    class Meta:
-        model = models.Policy
-        fields = ('description', 'cloud_provider', 'external_policy')
 
 # ViewSets define the view behavior.
 #class UserViewSet(viewsets.ModelViewSet):
@@ -76,10 +71,6 @@ class PolicyViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
     serializer_class = PolicySerializer
 
-class PolicyUploadViewSet(viewsets.ModelViewSet):
-    queryset = models.Policy.objects.all()
-    serializer_class = PolicyUploadSerializer
-
 class And_ruleViewSet(viewsets.ModelViewSet):
     queryset = models.And_rule.objects.all()
     serializer_class = And_ruleSerializer
@@ -92,14 +83,13 @@ class ConditionViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 #router.register(r'users', views.UserViewSet)
 #router.register(r'groups', views.GroupViewSet)
-router.register(r'attribute_category', views.Attribute_categoryViewSet)
-router.register(r'operator', views.OperatorViewSet)
-router.register(r'cloud_platform', views.Cloud_platformViewSet)
-router.register(r'cloud_provider', views.Cloud_providerViewSet)
-router.register(r'policy', views.PolicyViewSet)
-router.register(r'policy_upload', views.PolicyUploadViewSet)
-router.register(r'and_rule', views.And_ruleViewSet)
-router.register(r'condition', views.ConditionViewSet)
+router.register(r'policies/attribute_categories', views.Attribute_categoryViewSet)
+router.register(r'policies/operators', views.OperatorViewSet)
+router.register(r'policies/cloud_platforms', views.Cloud_platformViewSet)
+router.register(r'policies/cloud_providers', views.Cloud_providerViewSet)
+router.register(r'policies/and_rules', views.And_ruleViewSet)
+router.register(r'policies/conditions', views.ConditionViewSet)
+router.register(r'policies', views.PolicyViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
