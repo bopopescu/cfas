@@ -7,14 +7,14 @@ import re
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description',)
+        fields = ('id', 'description',)
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.And_rule
-        fields = ('policy', 'description', 'enabled', 'conditions')
+        fields = ('id', 'policy', 'description', 'enabled', 'conditions')
 
 class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
-        fields = ('attribute', 'operator', 'value', 'description')
+        fields = ('id', 'attribute', 'operator', 'value', 'description')

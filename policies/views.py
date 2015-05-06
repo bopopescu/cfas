@@ -16,17 +16,18 @@ class PolicyViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(description=self.request.data['description'])
         if 'policy' in self.request.data:
-            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])
+            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def perform_update(self, serializer):
         instance = serializer.save(description=self.request.data['description'])
         if 'policy' in self.request.data:
-            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['policy'])
+            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
-        resp = {}
-        resp['description'] = models.Policy.objects.get(id=pk).description
-        resp['policy'] = openstack_parser.export_openstack_policy(pk)
+        policy = models.Policy.objects.get(id=pk)
+        serializer = PolicySerializer(policy)
+        resp = serializer.data
+        resp['content'] = openstack_parser.export_openstack_policy(pk)
         return Response(resp)
 
 class And_ruleViewSet(viewsets.ModelViewSet):
