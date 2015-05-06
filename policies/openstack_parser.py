@@ -22,7 +22,7 @@ def parse_conds(attr, value, policy, conds, rules):
                                                                                    #     (it can have rules again into the reference)
             else:                                                                  # If the rules don't refer to any other rule...
                 at, vl = v.split(':')                                              # Split the "rule" in "attribute":"value"
-                entry = {'attr_category':'S', 'attr': at, 'op':'=', 'value': vl}   # Create a new condition entry
+                entry = {'attr': at, 'op':'=', 'value': vl}   # Create a new condition entry
                 if entry not in conds:                                             # If the entry is not in the condition list...
                     conds = conds + [entry]                                        # Add it to the list
 
@@ -31,8 +31,8 @@ def parse_conds(attr, value, policy, conds, rules):
         left = attr[:attr.find(':')]            # Split attribute by the first colon (:) occurence (service:action)
         right = attr[attr.find(':')+1:]
 
-        entry_l = {'attr_category':'R', 'attr': 'service', 'op':'=', 'value': left}  # Create a new condition entry for the service
-        entry_r = {'attr_category':'A', 'attr': 'action', 'op':'=', 'value': right}  # Create a new condition entry for the action
+        entry_l = {'attr': 'service', 'op':'=', 'value': left}  # Create a new condition entry for the service
+        entry_r = {'attr': 'action', 'op':'=', 'value': right}  # Create a new condition entry for the action
 
         if (entry_l not in conds):     # If the service condition is not in the list...
             conds = conds + [entry_l]  # Add it to the list
@@ -107,10 +107,7 @@ def to_dnf(conds, rules):
     return rules
 
 def create_and_rules_and_conditions(instance, external_policy):
-    # Load the variable of the external policy (policy.json content)
-    #ext_pol=json.loads(external_policy)
-
-    # Parses its content.
+    # Parses external_policy content.
     conds, rules = parse(external_policy)
 
     # Tranform rules to DNF
@@ -120,13 +117,9 @@ def create_and_rules_and_conditions(instance, external_policy):
     for c in conds:
         #print(c) #{'value': 'list_policies', 'attr': 'action', 'op': '=', 'attr_category': 'A'}
 
-        at = models.Attribute_category.objects.get(description = c['attr_category'])
-        op = models.Operator.objects.get(description = c['op'])
-
         data = {
-                  "attribute_category": at,
                   "attribute": c['attr'],
-                  "operator": op,
+                  "operator": c['op'],
                   "value": c['value'],
                   "description": c['attr']+c['op']+c['value']
               }
@@ -237,3 +230,37 @@ def create_and_rules_and_conditions(instance, external_policy):
                     #print( cd ) # {'attr': 'action', 'attr_category': 'A', 'op': '=', 'value': 'get_trust'}
                     cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
                     ar.conditions.add(cd)
+
+def export_openstack_policy(policy_id):
+    policy = {}
+    and_rules = models.And_rule.objects.filter(policy = policy_id).all()
+    for and_rule in and_rules: # For each and_rule
+         if and_rule.enabled:  # If it is enabled
+             service = ""
+             action  = ""
+             condition = ""
+             # TODO: Check if Operator is = (equals). If it is != (not equals), append not in front of value.
+             for cond in and_rule.conditions.all():     # Check all Conditions
+                 if cond.attribute == "service":        # Retrieve the Service
+                     service = cond.value         
+                 elif cond.attribute == "action":       # Retrieve the Action
+                     action = cond.value
+                 else:                                  # Retrieve the other Conditions (combining with "and"s)
+                     if condition == "":
+                         condition = cond.attribute + ":" + cond.value
+                     else:
+                         condition = condition + " and " + cond.attribute + ":" + cond.value
+             if service+":"+action in policy:           # Set the policy entry. If already exists, combine with "or"s
+                 if condition.find("and") == -1:
+                     policy[service+":"+action] = policy[service+":"+action] + " or " + condition
+                 else:
+                     policy[service+":"+action] = policy[service+":"+action] + " or (" + condition + ")"
+             else:
+                 if condition == "":
+                     policy[service+":"+action] = condition
+                 else:
+                     if condition.find("and") == -1:
+                         policy[service+":"+action] = condition
+                     else:
+                         policy[service+":"+action] = "(" + condition + ")"
+    return policy
