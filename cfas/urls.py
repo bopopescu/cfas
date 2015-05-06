@@ -83,13 +83,13 @@ class ConditionViewSet(viewsets.ModelViewSet):
 router = routers.DefaultRouter()
 #router.register(r'users', views.UserViewSet)
 #router.register(r'groups', views.GroupViewSet)
-router.register(r'policies/attribute_categories', views.Attribute_categoryViewSet)
-router.register(r'policies/operators', views.OperatorViewSet)
-router.register(r'policies/cloud_platforms', views.Cloud_platformViewSet)
-router.register(r'policies/cloud_providers', views.Cloud_providerViewSet)
-router.register(r'policies/and_rules', views.And_ruleViewSet)
-router.register(r'policies/conditions', views.ConditionViewSet)
-router.register(r'policies', views.PolicyViewSet)
+router.register(r'fpas/attribute_categories', views.Attribute_categoryViewSet)
+router.register(r'fpas/operators', views.OperatorViewSet)
+router.register(r'fpas/cloud_platforms', views.Cloud_platformViewSet)
+router.register(r'fpas/cloud_providers', views.Cloud_providerViewSet)
+router.register(r'fpas/and_rules', views.And_ruleViewSet)
+router.register(r'fpas/conditions', views.ConditionViewSet)
+router.register(r'fpas/policies', views.PolicyViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
