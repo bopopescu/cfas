@@ -24,12 +24,15 @@ class PolicyViewSet(viewsets.ModelViewSet):
             openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
-        policy = models.Policy.objects.get(id=pk)
-        serializer = PolicySerializer(policy)
         resp = {}
-        resp['policy'] = serializer.data
-        resp['policy']['content'] = openstack_parser.export_openstack_policy(pk)
-        return Response(resp)
+        try:
+            policy = models.Policy.objects.get(id=pk)
+            serializer = PolicySerializer(policy)
+            resp['policy'] = serializer.data
+            resp['policy']['content'] = openstack_parser.export_openstack_policy(pk)
+            return Response(resp)
+        except:
+            return Response(resp, 404)
 
     def list(self, request):
         queryset = models.Policy.objects.all()
@@ -43,14 +46,22 @@ class And_ruleViewSet(viewsets.ModelViewSet):
     serializer_class = And_ruleSerializer
 
     def retrieve(self, request, pk=None):
-        and_rule = models.And_rule.objects.get(id=pk)
-        serializer = And_ruleSerializer(and_rule)
         resp = {}
-        resp['and_rule'] = serializer.data
-        return Response(resp)
+        try:
+            and_rule = models.And_rule.objects.get(id=pk)
+            serializer = And_ruleSerializer(and_rule)
+            resp['and_rule'] = serializer.data
+            return Response(resp)
+        except:
+            return Response(resp, 404)
 
     def list(self, request):
         queryset = models.And_rule.objects.all()
+
+        policy = self.request.QUERY_PARAMS.get('policy', None)
+        if policy is not None:
+            queryset = queryset.filter(policy=policy)
+
         serializer = And_ruleSerializer(queryset, many=True)
         resp = {}
         resp['and_rules'] = serializer.data
@@ -61,11 +72,14 @@ class ConditionViewSet(viewsets.ModelViewSet):
     serializer_class = ConditionSerializer
 
     def retrieve(self, request, pk=None):
-        condition = models.Condition.objects.get(id=pk)
-        serializer = ConditionSerializer(condition)
         resp = {}
-        resp['condition'] = serializer.data
-        return Response(resp)
+        try:
+            condition = models.Condition.objects.get(id=pk)
+            serializer = ConditionSerializer(condition)
+            resp['condition'] = serializer.data
+            return Response(resp)
+        except:
+            return Response(resp, 404)
 
     def list(self, request):
         queryset = models.Condition.objects.all()
@@ -73,3 +87,9 @@ class ConditionViewSet(viewsets.ModelViewSet):
         resp = {}
         resp['conditions'] = serializer.data
         return Response(resp)
+
+    def update(self, request, pk=None):
+        return Response("Update is not permited on Conditions", status=405)
+
+    def partial_update(self, request, pk=None):
+        return Response("Update is not permited on Conditions", status=405)
