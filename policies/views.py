@@ -92,12 +92,17 @@ class ConditionViewSet(viewsets.ModelViewSet):
         return Response(resp)
 
     def update(self, request, pk=None):
-        return Response("Update is not permited on Conditions", status=405)
+        resp = {}
+        resp['detail'] = "Update is not permited on Conditions"
+        return Response(resp, status=405)
 
     def partial_update(self, request, pk=None):
-        return Response("Update is not permited on Conditions", status=405)
+        resp = {}
+        resp['detail'] = "Update is not permited on Conditions"
+        return Response(resp, status=405)
 
     def destroy(self, request, pk=None):
+        resp = {}
         refd = False
         and_rules = models.And_rule.objects.all()
         for and_rule in and_rules.iterator():
@@ -108,11 +113,9 @@ class ConditionViewSet(viewsets.ModelViewSet):
                 refd = True
                 break
         if refd:
-            return Response("Condition is referenced by one or more And Rules. Can not delete it", status=403)
+            resp['detail'] = "Condition is referenced by one or more And Rules. Can not delete it"
+            return Response(resp, status=403)
         else:
-            try:
-                condition = models.Condition.objects.filter(id=pk).delete()
-                return Response("Condition deleted.", status=204)
-            except:
-                resp['detail'] = "Not found."
-                return Response(resp, status=404)
+            condition = models.Condition.objects.filter(id=pk).delete()
+            resp['detail'] = "Condition deleted."
+            return Response(resp, status=204)
