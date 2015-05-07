@@ -263,7 +263,7 @@ def export_openstack_policy(policy_id):
                     policy[service+":"+action] = "(" + condition + ")"
     return policy
 
-def actions_from_roles(queryset, roles):
+def actions_from_roles(queryset, attributes):
     # Cases:
 
     # 1) condition = "role:match" ==> Granted (G)                               Role_match     and not Other_role and not Other_cond
@@ -279,14 +279,15 @@ def actions_from_roles(queryset, roles):
     # elif Granted_with_cond or ... ==> Granted_with_cond
     # else Not Granted
 
-    roles = json.loads(roles)
+    attributes = json.loads(attributes)    #{"role": ["admin"], "attr2": [--list--]}
+
     resp = {}
     access = {}
     for and_rule in queryset:
         if and_rule.enabled:
 
-            role_match = False
-            other_role = False
+            attr_match = False
+            other_attr = False
             other_cond = False
 
             service = ""
@@ -299,11 +300,11 @@ def actions_from_roles(queryset, roles):
                     service = cond.value
                 elif cond.attribute == "action":
                     action = cond.value
-                elif cond.attribute == "role":
-                    if cond.value in roles:
-                        role_match = True
+                elif cond.attribute in attributes:
+                    if cond.value in attributes[cond.attribute]:
+                        attr_match = True
                     else:
-                        other_role = True
+                        other_attr = True
                 else:
                     other_cond = True
                     if condition == "":
@@ -312,12 +313,12 @@ def actions_from_roles(queryset, roles):
                        condition = condition + " and " + cond.attribute + ":" + cond.value
             
             # Cases 1 and 2 (Granted):
-            if not other_role and not other_cond:
+            if not other_attr and not other_cond:
                 access[service+":"+action] = "G"
-                resp[service+":"+action] = "Granted"
+                resp[service+":"+action] = ""
 
             # Cases 3 and 4 (Granted with Conditions):
-            elif not other_role and other_cond:
+            elif not other_attr and other_cond:
                  if service+":"+action not in access or access[service+":"+action] != "G":
                     access[service+":"+action] = "C"
                     if service+":"+action in resp:           # Set the policy entry. If already exists, combine with "or"s
@@ -331,7 +332,7 @@ def actions_from_roles(queryset, roles):
                         else:
                             resp[service+":"+action] = "(" + condition + ")"
 
-            # Cases 5 and 6 (Not Granted) ==> other_role
+            # Cases 5 and 6 (Not Granted) ==> other_attr
             else:
                 if service+":"+action in access:
                      if access[service+":"+action] != "G" or access[service+":"+action] != "C":
