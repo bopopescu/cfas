@@ -64,9 +64,9 @@ class And_ruleViewSet(viewsets.ModelViewSet):
         if policy is not None:
             queryset = queryset.filter(policy=policy)
 
-        role = self.request.QUERY_PARAMS.get('role', None)
-        if role is not None:
-            resp = openstack_parser.actions_from_roles(queryset, role)
+        roles = self.request.QUERY_PARAMS.get('roles', None)
+        if roles is not None:
+            resp = openstack_parser.actions_from_roles(queryset, roles)
         else:
             serializer = And_ruleSerializer(queryset, many=True)
             resp = {}

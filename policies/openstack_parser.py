@@ -263,7 +263,7 @@ def export_openstack_policy(policy_id):
                     policy[service+":"+action] = "(" + condition + ")"
     return policy
 
-def actions_from_roles(queryset, role):
+def actions_from_roles(queryset, roles):
     # Cases:
 
     # 1) condition = "role:match" ==> Granted (G)                               Role_match     and not Other_role and not Other_cond
@@ -279,6 +279,7 @@ def actions_from_roles(queryset, role):
     # elif Granted_with_cond or ... ==> Granted_with_cond
     # else Not Granted
 
+    roles = json.loads(roles)
     resp = {}
     access = {}
     for and_rule in queryset:
@@ -299,7 +300,7 @@ def actions_from_roles(queryset, role):
                 elif cond.attribute == "action":
                     action = cond.value
                 elif cond.attribute == "role":
-                    if cond.value == role:
+                    if cond.value in roles:
                         role_match = True
                     else:
                         other_role = True
