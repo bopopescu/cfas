@@ -342,62 +342,34 @@ def actions_1(queryset, attributes):
                         access[service+":"+action] = "N"
     return resp
 
+# This function returns all actions that are allowed when the attributes from
+# request matches and there is no other required.
 def actions(queryset, attributes):
-    # Cases:
-
-    # 1) condition = "attr:match" ==> Granted (G)
-    # 2) condition = "" ==> Granted (G)
-
-    # 3) condition = "attr:match and xxxx" ==> Not Granted (N)
-    # 4) condition = "..." ==> Not Granted (N)
-    # 5) condition = "attr:not_match" ==> Not Granted (N)
-    # 6) condition = "attr:not_match and ..." ==> Not Granted (N)
-
-    # if Granted or ... ==> Granted
-    # else Not Granted
 
     attributes = json.loads(attributes)    #{"role": ["admin"], "attr2": [--list--]}
 
     resp = []
-    access = {}
     for and_rule in queryset:
         if and_rule.enabled:
 
-            attr_match = False
-            other_attr = False
-            other_cond = False
+            other = False # Other unmatched condition(s) found
 
             service = ""
             action = ""
-            condition = ""
 
-            # Find out the Case
             for cond in and_rule.conditions.all():
                 if cond.attribute == "service":
                     service = cond.value
                 elif cond.attribute == "action":
                     action = cond.value
                 elif cond.attribute in attributes:
-                    if cond.value in attributes[cond.attribute]:
-                        attr_match = True
-                    else:
-                        other_attr = True
+                    if cond.value not in attributes[cond.attribute]:
+                        other = True
                 else:
-                    other_cond = True
-                    if condition == "":
-                        condition = cond.attribute + ":" + cond.value
-                    else:
-                       condition = condition + " and " + cond.attribute + ":" + cond.value
+                    other = True
             
-            # Cases 1 and 2 (Granted):
-            if not other_attr and not other_cond:
-                access[service+":"+action] = "G"
+            if not other:
                 if service+":"+action not in resp:
                     resp = resp + [service+":"+action]
 
-            # Cases 3, 4, 5 and 6 (Not Granted)
-            else:
-                if service+":"+action in access:
-                     if access[service+":"+action] != "G" or access[service+":"+action] != "C":
-                        access[service+":"+action] = "N"
     return resp
