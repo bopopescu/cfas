@@ -392,7 +392,8 @@ def actions(queryset, attributes):
             # Cases 1 and 2 (Granted):
             if not other_attr and not other_cond:
                 access[service+":"+action] = "G"
-                resp = resp + [service+":"+action]
+                if service+":"+action not in resp:
+                    resp = resp + [service+":"+action]
 
             # Cases 3, 4, 5 and 6 (Not Granted)
             else:
