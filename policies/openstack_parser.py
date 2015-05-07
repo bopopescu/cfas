@@ -1,4 +1,5 @@
 from policies import models
+#from policies.serializers import And_ruleSerializer, ConditionSerializer
 from pyeda.inter import *
 import json
 import re
@@ -235,32 +236,103 @@ def export_openstack_policy(policy_id):
     policy = {}
     and_rules = models.And_rule.objects.filter(policy = policy_id).all()
     for and_rule in and_rules: # For each and_rule
-         if and_rule.enabled:  # If it is enabled
-             service = ""
-             action  = ""
-             condition = ""
-             # TODO: Check if Operator is = (equals). If it is != (not equals), append not in front of value.
-             for cond in and_rule.conditions.all():     # Check all Conditions
-                 if cond.attribute == "service":        # Retrieve the Service
-                     service = cond.value         
-                 elif cond.attribute == "action":       # Retrieve the Action
-                     action = cond.value
-                 else:                                  # Retrieve the other Conditions (combining with "and"s)
-                     if condition == "":
-                         condition = cond.attribute + ":" + cond.value
-                     else:
-                         condition = condition + " and " + cond.attribute + ":" + cond.value
-             if service+":"+action in policy:           # Set the policy entry. If already exists, combine with "or"s
-                 if condition.find("and") == -1:
-                     policy[service+":"+action] = policy[service+":"+action] + " or " + condition
-                 else:
-                     policy[service+":"+action] = policy[service+":"+action] + " or (" + condition + ")"
-             else:
-                 if condition == "":
-                     policy[service+":"+action] = condition
-                 else:
-                     if condition.find("and") == -1:
-                         policy[service+":"+action] = condition
-                     else:
-                         policy[service+":"+action] = "(" + condition + ")"
+        if and_rule.enabled:  # If it is enabled
+            service = ""
+            action  = ""
+            condition = ""
+            # TODO: Check if Operator is = (equals). If it is != (not equals), append not in front of value.
+            for cond in and_rule.conditions.all():     # Check all Conditions
+                if cond.attribute == "service":        # Retrieve the Service
+                    service = cond.value         
+                elif cond.attribute == "action":       # Retrieve the Action
+                    action = cond.value
+                else:                                  # Retrieve the other Conditions (combining with "and"s)
+                    if condition == "":
+                        condition = cond.attribute + ":" + cond.value
+                    else:
+                        condition = condition + " and " + cond.attribute + ":" + cond.value
+            if service+":"+action in policy:           # Set the policy entry. If already exists, combine with "or"s
+                if condition.find("and") == -1:
+                    policy[service+":"+action] = policy[service+":"+action] + " or " + condition
+                else:
+                    policy[service+":"+action] = policy[service+":"+action] + " or (" + condition + ")"
+            else:
+                if condition.find("and") == -1:        # Includes the case: condition == ""
+                    policy[service+":"+action] = condition
+                else:
+                    policy[service+":"+action] = "(" + condition + ")"
     return policy
+
+def actions_from_roles(queryset, role):
+    # Cases:
+
+    # 1) condition = "role:match" ==> Granted (G)                               Role_match     and not Other_role and not Other_cond
+    # 2) condition = "" ==> Granted (G)                                         not Role_match and not Other_role and not Other_cond
+
+    # 3) condition = "role:match and xxxx" ==> Granted with condition (C)       Role_match     and not Other_role and     Other_cond
+    # 4) condition = "..." ==> Granted with condition (C)                       not Role_match and not Other_role and     Other_cond
+
+    # 5) condition = "role:not_match" ==> Not Granted (N)                       not Role_match and     Other_role and not Other_cond     
+    # 6) condition = "role:not_match and ..." ==> Not Granted (N)               not Role_match and     Other_role and     Other_cond
+
+    # if Granted or ... ==> Granted
+    # elif Granted_with_cond or ... ==> Granted_with_cond
+    # else Not Granted
+
+    resp = {}
+    access = {}
+    for and_rule in queryset:
+        if and_rule.enabled:
+
+            role_match = False
+            other_role = False
+            other_cond = False
+
+            service = ""
+            action = ""
+            condition = ""
+
+            # Find out the Case
+            for cond in and_rule.conditions.all():
+                if cond.attribute == "service":
+                    service = cond.value
+                elif cond.attribute == "action":
+                    action = cond.value
+                elif cond.attribute == "role":
+                    if cond.value == role:
+                        role_match = True
+                    else:
+                        other_role = True
+                else:
+                    other_cond = True
+                    if condition == "":
+                        condition = cond.attribute + ":" + cond.value
+                    else:
+                       condition = condition + " and " + cond.attribute + ":" + cond.value
+            
+            # Cases 1 and 2 (Granted):
+            if not other_role and not other_cond:
+                access[service+":"+action] = "G"
+                resp[service+":"+action] = "Granted"
+
+            # Cases 3 and 4 (Granted with Conditions):
+            elif not other_role and other_cond:
+                 if service+":"+action not in access or access[service+":"+action] != "G":
+                    access[service+":"+action] = "C"
+                    if service+":"+action in resp:           # Set the policy entry. If already exists, combine with "or"s
+                        if condition.find("and") == -1:
+                            resp[service+":"+action] = resp[service+":"+action] + " or " + condition
+                        else:
+                            resp[service+":"+action] = resp[service+":"+action] + " or (" + condition + ")"
+                    else:
+                        if condition.find("and") == -1:        # Includes the case: condition == ""
+                            resp[service+":"+action] = condition
+                        else:
+                            resp[service+":"+action] = "(" + condition + ")"
+
+            # Cases 5 and 6 (Not Granted) ==> other_role
+            else:
+                if service+":"+action in access:
+                     if access[service+":"+action] != "G" or access[service+":"+action] != "C":
+                        access[service+":"+action] = "N"
+    return resp

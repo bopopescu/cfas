@@ -64,9 +64,13 @@ class And_ruleViewSet(viewsets.ModelViewSet):
         if policy is not None:
             queryset = queryset.filter(policy=policy)
 
-        serializer = And_ruleSerializer(queryset, many=True)
-        resp = {}
-        resp['and_rules'] = serializer.data
+        role = self.request.QUERY_PARAMS.get('role', None)
+        if role is not None:
+            resp = openstack_parser.actions_from_roles(queryset, role)
+        else:
+            serializer = And_ruleSerializer(queryset, many=True)
+            resp = {}
+            resp['and_rules'] = serializer.data
         return Response(resp)
 
 class ConditionViewSet(viewsets.ModelViewSet):
@@ -119,3 +123,4 @@ class ConditionViewSet(viewsets.ModelViewSet):
             condition = models.Condition.objects.filter(id=pk).delete()
             resp['detail'] = "Condition deleted."
             return Response(resp, status=204)
+
