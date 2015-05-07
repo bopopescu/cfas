@@ -25,17 +25,28 @@ class PolicyViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         resp = {}
+
+        roles = self.request.QUERY_PARAMS.get('roles', None)
+
         try:
             policy = models.Policy.objects.get(id=pk)
             serializer = PolicySerializer(policy)
+            resp['policy'] = {}
             resp['policy'] = serializer.data
             resp['policy']['content'] = openstack_parser.export_openstack_policy(pk)
+
+            #&attributes={"role": ["admin"], "...": []}
+            if roles is not None:
+                queryset = models.And_rule.objects.filter(policy=pk).all()
+                resp['policy']['access'] = openstack_parser.actions_from_roles(queryset, roles)
+
             return Response(resp)
         except:
             resp['detail'] = "Not found."
             return Response(resp, status=404)
 
     def list(self, request):
+        roles = self.request.QUERY_PARAMS.get('roles', None)
         queryset = models.Policy.objects.all()
         serializer = PolicySerializer(queryset, many=True)
         resp = {}
@@ -64,13 +75,9 @@ class And_ruleViewSet(viewsets.ModelViewSet):
         if policy is not None:
             queryset = queryset.filter(policy=policy)
 
-        roles = self.request.QUERY_PARAMS.get('roles', None)
-        if roles is not None:
-            resp = openstack_parser.actions_from_roles(queryset, roles)
-        else:
-            serializer = And_ruleSerializer(queryset, many=True)
-            resp = {}
-            resp['and_rules'] = serializer.data
+        serializer = And_ruleSerializer(queryset, many=True)
+        resp = {}
+        resp['and_rules'] = serializer.data
         return Response(resp)
 
 class ConditionViewSet(viewsets.ModelViewSet):
