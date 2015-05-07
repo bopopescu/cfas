@@ -48,31 +48,22 @@ class PolicyViewSet(viewsets.ModelViewSet):
     def actions_retrieve(self, request, pk=None):
         resp = {}
         attributes = self.request.QUERY_PARAMS.get('attributes', None)
-        if attributes is not None:
-            queryset = models.And_rule.objects.filter(policy=pk).all()
-            resp['actions'] = openstack_parser.actions_from_roles(queryset, attributes)
-        try:
-            return Response(resp)
-        except:
-            resp['detail'] = "Not found."
-            return Response(resp, status=404)
+        if attributes is None:
+            attributes = "{}"
+        queryset = models.And_rule.objects.filter(policy=pk).all()
+        resp['actions'] = openstack_parser.actions(queryset, attributes)            
+        return Response(resp)
 
     # get /policies/actions_per_attributes/?attributes={"role": ["admin"], "attr2": [--list--]}
     @list_route(methods=['get'], url_path='actions')
     def actions_list(self, request):
         resp = {}
         attributes = self.request.QUERY_PARAMS.get('attributes', None)
-        try:
-            if attributes is not None:
-                queryset = models.And_rule.objects.all()
-                resp['actions'] = openstack_parser.actions_from_roles(queryset, attributes)
-
-            return Response(resp)
-        except:
-            resp['detail'] = "Not found."
-            return Response(resp, status=404)
-        
-
+        if attributes is None:
+            attributes = "{}"
+        queryset = models.And_rule.objects.all()
+        resp['actions'] = openstack_parser.actions(queryset, attributes)
+        return Response(resp)
 
 class And_ruleViewSet(viewsets.ModelViewSet):
     queryset = models.And_rule.objects.all()

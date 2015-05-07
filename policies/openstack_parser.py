@@ -263,7 +263,10 @@ def export_openstack_policy(policy_id):
                     policy[service+":"+action] = "(" + condition + ")"
     return policy
 
-def actions_from_roles(queryset, attributes):
+# This function returns all actions that are allowed when the attributes from
+# request matches and there is no other required from the same type.
+# Other attributes are left as conditions
+def actions_1(queryset, attributes):
     # Cases:
 
     # 1) condition = "role:match" ==> Granted (G)                               Role_match     and not Other_role and not Other_cond
@@ -333,6 +336,65 @@ def actions_from_roles(queryset, attributes):
                             resp[service+":"+action] = "(" + condition + ")"
 
             # Cases 5 and 6 (Not Granted) ==> other_attr
+            else:
+                if service+":"+action in access:
+                     if access[service+":"+action] != "G" or access[service+":"+action] != "C":
+                        access[service+":"+action] = "N"
+    return resp
+
+def actions(queryset, attributes):
+    # Cases:
+
+    # 1) condition = "attr:match" ==> Granted (G)
+    # 2) condition = "" ==> Granted (G)
+
+    # 3) condition = "attr:match and xxxx" ==> Not Granted (N)
+    # 4) condition = "..." ==> Not Granted (N)
+    # 5) condition = "attr:not_match" ==> Not Granted (N)
+    # 6) condition = "attr:not_match and ..." ==> Not Granted (N)
+
+    # if Granted or ... ==> Granted
+    # else Not Granted
+
+    attributes = json.loads(attributes)    #{"role": ["admin"], "attr2": [--list--]}
+
+    resp = []
+    access = {}
+    for and_rule in queryset:
+        if and_rule.enabled:
+
+            attr_match = False
+            other_attr = False
+            other_cond = False
+
+            service = ""
+            action = ""
+            condition = ""
+
+            # Find out the Case
+            for cond in and_rule.conditions.all():
+                if cond.attribute == "service":
+                    service = cond.value
+                elif cond.attribute == "action":
+                    action = cond.value
+                elif cond.attribute in attributes:
+                    if cond.value in attributes[cond.attribute]:
+                        attr_match = True
+                    else:
+                        other_attr = True
+                else:
+                    other_cond = True
+                    if condition == "":
+                        condition = cond.attribute + ":" + cond.value
+                    else:
+                       condition = condition + " and " + cond.attribute + ":" + cond.value
+            
+            # Cases 1 and 2 (Granted):
+            if not other_attr and not other_cond:
+                access[service+":"+action] = "G"
+                resp = resp + [service+":"+action]
+
+            # Cases 3, 4, 5 and 6 (Not Granted)
             else:
                 if service+":"+action in access:
                      if access[service+":"+action] != "G" or access[service+":"+action] != "C":
