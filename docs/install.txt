@@ -1,0 +1,29 @@
+sudo mkdir /var/www/cfas
+sudo chown -R ioram.ioram /var/www/cfas
+cd /var/www/cfas
+virtualenv -p python3 env
+source env/bin/activate
+   (deactivate)
+pip3 install django
+pip3 install djangorestframework
+pip3 install markdown
+pip3 install django-filter
+pip3 install pyeda
+pip3 install pyparsing (OR easy_install pyparsing - tested)
+
+pip install --allow-all-external mysql-connector-python
+env/bin/django-admin.py startproject cfas .
+
+Modify cfas/settings.py
+(add restframework to INSTALLED_APPS)
+(modify DATABASE entry to mysql)
+
+Modify cfas/urls.py
+(http://www.django-rest-framework.org/#installation)
+
+python manage.py migrate
+python manage.py createsuperuser
+
+
+Iniciar server:
+env/bin/python manage.py runserver 0.0.0.0:8000
