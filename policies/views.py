@@ -14,29 +14,34 @@ class PolicyViewSet(viewsets.ModelViewSet):
         instance.delete()                                             # Now, delete the policy itself
 
     def perform_create(self, serializer):
-        instance = serializer.save(description=self.request.data['description'])
-        if 'policy' in self.request.data:
+        instance = serializer.save(description=self.request.data['description'], type=self.request.data['type'])
+        if 'content' in self.request.data:
             openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def perform_update(self, serializer):
-        instance = serializer.save(description=self.request.data['description'])
-        if 'policy' in self.request.data:
+        instance = serializer.save()
+        if 'content' in self.request.data:
             openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
+        service = self.request.QUERY_PARAMS.get('service', None)
+        action = self.request.QUERY_PARAMS.get('action', None)
+        filters = {}
+        filters['service'] = service
+        filters['action'] = action
+
         resp = {}
         try:
             policy = models.Policy.objects.get(id=pk)
             serializer = PolicySerializer(policy)
             resp['policy'] = serializer.data
-            resp['policy']['content'] = openstack_parser.export_openstack_policy(pk)
+            resp['policy']['content'] = openstack_parser.export_openstack_policy(pk, filters)
             return Response(resp)
         except:
             resp['detail'] = "Not found."
             return Response(resp, status=404)
 
     def list(self, request):
-        roles = self.request.QUERY_PARAMS.get('roles', None)
         queryset = models.Policy.objects.all()
         serializer = PolicySerializer(queryset, many=True)
         resp = {}
@@ -54,7 +59,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
         resp['actions'] = openstack_parser.actions(queryset, attributes)            
         return Response(resp)
 
-    # get /policies/actions_per_attributes/?attributes={"role": ["admin"], "attr2": [--list--]}
+    # get /policies/actions/?attributes={"role": ["admin"], "attr2": [--list--]}
     @list_route(methods=['get'], url_path='actions')
     def actions_list(self, request):
         resp = {}

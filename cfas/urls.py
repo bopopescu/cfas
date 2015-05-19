@@ -6,7 +6,7 @@ from policies import views, models
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description',)
+        fields = ('description','type')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,7 +16,7 @@ class And_ruleSerializer(serializers.ModelSerializer):
 class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
-        fields = ('negated', 'attribute', 'operator', 'value', 'description')
+        fields = ('negated', 'attribute', 'operator', 'value', 'type', 'description')
 
 class PolicyViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()

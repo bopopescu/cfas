@@ -118,14 +118,20 @@ def create_and_rules_and_conditions(instance, external_policy):
     for c in conds:
         #print(c) #{'value': 'list_policies', 'attr': 'action', 'op': '=', 'attr_category': 'A'}
 
+        if c['value'].find("%(") == 0 and c['value'].rfind(")s") == len(c['value']) - 2:
+            type = "v"
+        else:
+            type = "c"
+
         data = {
                   "attribute": c['attr'],
                   "operator": c['op'],
                   "value": c['value'],
+                  "type": type,
                   "description": c['attr']+c['op']+c['value']
               }
     
-        num = models.Condition.objects.filter(description = c['attr']+c['op']+c['value']).count()
+        num = models.Condition.objects.filter(attribute=c['attr'], operator=c['op'], value=c['value'], type=type).count()
         if num == 0:
             models.Condition.objects.create(**data)
 
@@ -232,7 +238,7 @@ def create_and_rules_and_conditions(instance, external_policy):
                     cd = models.Condition.objects.get(description = cd['attr']+cd['op']+cd['value'])
                     ar.conditions.add(cd)
 
-def export_openstack_policy(policy_id):
+def export_openstack_policy(policy_id, filters):
     policy = {}
     and_rules = models.And_rule.objects.filter(policy = policy_id).all()
     for and_rule in and_rules: # For each and_rule
@@ -251,22 +257,36 @@ def export_openstack_policy(policy_id):
                         condition = cond.attribute + ":" + cond.value
                     else:
                         condition = condition + " and " + cond.attribute + ":" + cond.value
-            if service+":"+action in policy:           # Set the policy entry. If already exists, combine with "or"s
-                if condition.find("and") == -1:
-                    policy[service+":"+action] = policy[service+":"+action] + " or " + condition
+
+            # Only imput policy if service & action matches with filters parameter
+            # Cases:
+            # 1) service:action
+            # 2) service:None
+            # 3) None:action
+            # 4) None:None (no filter)
+            filter = False
+            if (filters['service'] == service or filters['service'] is None) \
+               and (filters['action'] == action or filters['action'] is None):
+                filter = True
+
+            # If filter matches, insert the policy. Otherwise, go to the other policy entry
+            if filter:
+                if service+":"+action in policy:           # Set the policy entry. If already exists, combine with "or"s
+                    if condition.find("and") == -1:
+                        policy[service+":"+action] = policy[service+":"+action] + " or " + condition
+                    else:
+                        policy[service+":"+action] = policy[service+":"+action] + " or (" + condition + ")"
                 else:
-                    policy[service+":"+action] = policy[service+":"+action] + " or (" + condition + ")"
-            else:
-                if condition.find("and") == -1:        # Includes the case: condition == ""
-                    policy[service+":"+action] = condition
-                else:
-                    policy[service+":"+action] = "(" + condition + ")"
+                    if condition.find("and") == -1:        # Includes the case: condition == ""
+                        policy[service+":"+action] = condition
+                    else:
+                        policy[service+":"+action] = "(" + condition + ")"
     return policy
 
 # This function returns all actions that are allowed when the attributes from
 # request matches and there is no other required from the same type.
 # Other attributes are left as conditions
-def actions_1(queryset, attributes):
+def actions(queryset, attributes):
     # Cases:
 
     # 1) condition = "role:match" ==> Granted (G)                               Role_match     and not Other_role and not Other_cond
@@ -290,7 +310,7 @@ def actions_1(queryset, attributes):
         if and_rule.enabled:
 
             attr_match = False
-            other_attr = False
+            wrong_attr = False
             other_cond = False
 
             service = ""
@@ -304,10 +324,18 @@ def actions_1(queryset, attributes):
                 elif cond.attribute == "action":
                     action = cond.value
                 elif cond.attribute in attributes:
-                    if cond.value in attributes[cond.attribute]:
-                        attr_match = True
+                    if cond.type == "c":
+                        if cond.value in attributes[cond.attribute]:
+                            attr_match = True
+                        else:
+                            wrong_attr = True
                     else:
-                        other_attr = True
+                        other_cond = True
+                        attr_match = True
+                        if condition == "":
+                            condition = cond.attribute + ":" + cond.value
+                        else:
+                            condition = condition + " and " + cond.attribute + ":" + cond.value
                 else:
                     other_cond = True
                     if condition == "":
@@ -316,12 +344,12 @@ def actions_1(queryset, attributes):
                        condition = condition + " and " + cond.attribute + ":" + cond.value
             
             # Cases 1 and 2 (Granted):
-            if not other_attr and not other_cond:
+            if not wrong_attr and not other_cond:
                 access[service+":"+action] = "G"
                 resp[service+":"+action] = ""
 
             # Cases 3 and 4 (Granted with Conditions):
-            elif not other_attr and other_cond:
+            elif not wrong_attr and other_cond and attr_match:
                  if service+":"+action not in access or access[service+":"+action] != "G":
                     access[service+":"+action] = "C"
                     if service+":"+action in resp:           # Set the policy entry. If already exists, combine with "or"s
@@ -335,7 +363,7 @@ def actions_1(queryset, attributes):
                         else:
                             resp[service+":"+action] = "(" + condition + ")"
 
-            # Cases 5 and 6 (Not Granted) ==> other_attr
+            # Cases 5 and 6 (Not Granted) ==> wrong_attr
             else:
                 if service+":"+action in access:
                      if access[service+":"+action] != "G" or access[service+":"+action] != "C":
@@ -344,7 +372,7 @@ def actions_1(queryset, attributes):
 
 # This function returns all actions that are allowed when the attributes from
 # request matches and there is no other required.
-def actions(queryset, attributes):
+def actions_2(queryset, attributes):
 
     attributes = json.loads(attributes)    #{"role": ["admin"], "attr2": [--list--]}
 
