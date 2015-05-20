@@ -325,7 +325,11 @@ def actions(queryset, attributes):
                     action = cond.value
                 elif cond.attribute in attributes:
                     if cond.type == "c":
-                        if cond.value in attributes[cond.attribute]:
+                        if type(attributes[cond.attribute]) is list:
+                            match = (cond.value in attributes[cond.attribute])
+                        else: #string
+                            match = (cond.value == attributes[cond.attribute])
+                        if match:
                             attr_match = True
                         else:
                             wrong_attr = True
@@ -345,29 +349,27 @@ def actions(queryset, attributes):
             
             # Cases 1 and 2 (Granted):
             if not wrong_attr and not other_cond:
-                access[service+":"+action] = "G"
                 resp[service+":"+action] = ""
 
             # Cases 3 and 4 (Granted with Conditions):
             elif not wrong_attr and other_cond and attr_match:
-                 if service+":"+action not in access or access[service+":"+action] != "G":
-                    access[service+":"+action] = "C"
-                    if service+":"+action in resp:           # Set the policy entry. If already exists, combine with "or"s
-                        if condition.find("and") == -1:
-                            resp[service+":"+action] = resp[service+":"+action] + " or " + condition
-                        else:
-                            resp[service+":"+action] = resp[service+":"+action] + " or (" + condition + ")"
+                if service+":"+action not in resp:      # This is the first policy
+                    if condition.find("and") == -1:        # Includes the case: condition == ""
+                        resp[service+":"+action] = condition
                     else:
-                        if condition.find("and") == -1:        # Includes the case: condition == ""
-                            resp[service+":"+action] = condition
-                        else:
-                            resp[service+":"+action] = "(" + condition + ")"
+                        resp[service+":"+action] = "(" + condition + ")"
+
+                elif resp[service+":"+action] != "":   # The policy was not yet granted - combine with or
+                    if condition.find("and") == -1:
+                        resp[service+":"+action] = resp[service+":"+action] + " or " + condition
+                    else:
+                        resp[service+":"+action] = resp[service+":"+action] + " or (" + condition + ")"
+#                else:  # If the policy was already granted, do nothing
+#                    pass
 
             # Cases 5 and 6 (Not Granted) ==> wrong_attr
-            else:
-                if service+":"+action in access:
-                     if access[service+":"+action] != "G" or access[service+":"+action] != "C":
-                        access[service+":"+action] = "N"
+#            else: # If policy is not granted, do nothing.
+#                pass
     return resp
 
 # This function returns all actions that are allowed when the attributes from

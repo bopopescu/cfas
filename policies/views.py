@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import detail_route, list_route
 from policies import models
 from policies import openstack_parser
+from policies import dnf_parser
 from policies.serializers import PolicySerializer, And_ruleSerializer, ConditionSerializer
 
 class PolicyViewSet(viewsets.ModelViewSet):
@@ -35,7 +36,10 @@ class PolicyViewSet(viewsets.ModelViewSet):
             policy = models.Policy.objects.get(id=pk)
             serializer = PolicySerializer(policy)
             resp['policy'] = serializer.data
+#            if policy.type == 'o':
             resp['policy']['content'] = openstack_parser.export_openstack_policy(pk, filters)
+#            elif policy.type == 'd':
+#                resp['policy']['content'] = dnf_parser.export_dnf_policy(pk)
             return Response(resp)
         except:
             resp['detail'] = "Not found."
