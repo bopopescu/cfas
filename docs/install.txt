@@ -1,6 +1,7 @@
-sudo mkdir /var/www/cfas
-sudo chown -R ioram.ioram /var/www/cfas
+mkdir /var/www/cfas
+chown -R ioram.ioram /var/www/cfas
 cd /var/www/cfas
+
 virtualenv -p python3 env
 source env/bin/activate
    (deactivate)
@@ -11,8 +12,10 @@ pip3 install django-filter
 pip3 install pyeda
 pip3 install pyparsing (OR easy_install pyparsing - tested)
 
-pip install --allow-all-external mysql-connector-python
-env/bin/django-admin.py startproject cfas .
+#pip install --allow-all-external mysql-connector-python
+pip install git+https://github.com/multiplay/mysql-connector-python
+
+#env/bin/django-admin.py startproject cfas .
 
 Modify cfas/settings.py
 (add restframework to INSTALLED_APPS)
