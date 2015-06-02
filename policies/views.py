@@ -25,8 +25,8 @@ class PolicyViewSet(viewsets.ModelViewSet):
             openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
-        service = self.request.QUERY_PARAMS.get('service', None)
-        action = self.request.QUERY_PARAMS.get('action', None)
+        service = self.request.query_params.get('service', None)
+        action = self.request.query_params.get('action', None)
         filters = {}
         filters['service'] = service
         filters['action'] = action
@@ -56,7 +56,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
     @detail_route(methods=['get'], url_path='actions')
     def actions_retrieve(self, request, pk=None):
         resp = {}
-        attributes = self.request.QUERY_PARAMS.get('attributes', None)
+        attributes = self.request.query_params.get('attributes', None)
         if attributes is None:
             attributes = "{}"
         queryset = models.And_rule.objects.filter(policy=pk).all()
@@ -67,7 +67,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
     @list_route(methods=['get'], url_path='actions')
     def actions_list(self, request):
         resp = {}
-        attributes = self.request.QUERY_PARAMS.get('attributes', None)
+        attributes = self.request.query_params.get('attributes', None)
         if attributes is None:
             attributes = "{}"
         queryset = models.And_rule.objects.all()
@@ -92,7 +92,7 @@ class And_ruleViewSet(viewsets.ModelViewSet):
     def list(self, request):
         queryset = models.And_rule.objects.all()
 
-        policy = self.request.QUERY_PARAMS.get('policy', None)
+        policy = self.request.query_params.get('policy', None)
         if policy is not None:
             queryset = queryset.filter(policy=policy)
 
