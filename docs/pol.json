@@ -1,0 +1,7 @@
+{
+    "description": "test policy",
+    "type": "o",
+    "content": {
+        "identity:create_user": "role:kent_user and role:kent_student"
+    }
+}
