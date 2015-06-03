@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route, list_route
 from policies import models
-from policies import openstack_parser
 from policies import dnf_parser
 from policies.serializers import PolicySerializer, And_ruleSerializer, ConditionSerializer
 
