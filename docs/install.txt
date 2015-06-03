@@ -10,10 +10,10 @@ pip3 install djangorestframework
 pip3 install markdown
 pip3 install django-filter
 pip3 install pyeda
-pip3 install pyparsing (OR easy_install pyparsing - tested)
+pip3 install pyparsing
 
-#pip install --allow-all-external mysql-connector-python
-pip install git+https://github.com/multiplay/mysql-connector-python
+#pip3 install --allow-all-external mysql-connector-python
+pip3 install git+https://github.com/multiplay/mysql-connector-python
 
 #env/bin/django-admin.py startproject cfas .
 

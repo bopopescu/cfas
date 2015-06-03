@@ -3,6 +3,36 @@ from policies import serializers
 import json
 import re
 
+def create_and_rules_and_conditions(instance, policy):
+    if 'and_rules' in policy: # If there is no and_rules, do nothing
+        # Delete all and rules from the database for a Policy ID
+        models.And_rule.objects.filter(policy = instance.id).delete()
+
+        for ar in policy['and_rules']:         # For each and rule...
+            # Create and_rule in database, associated to the current policy
+            enabled = True
+            if 'enabled' in ar:
+                enabled = ar['enabled']
+
+            data = {
+                     "policy": instance,
+                     "description": ar['description'],
+                     "enabled": enabled,
+                   }
+
+            new_ar = models.And_rule.objects.create(**data)
+
+            # Create conditions in database (if they are not already there), and add them to the new_ar
+            if 'conditions' in ar:     # If there is no condition, do nothing
+                for c in ar['conditions']:
+                    num = models.Condition.objects.filter(attribute=c['attribute'], operator=c['operator'], value=c['value'], type=c['type']).count()
+                    if num == 0:
+                        new_c = models.Condition.objects.create(**c)
+                        new_ar.conditions.add(new_c)
+                    elif num == 1:
+                        old_c = models.Condition.objects.get(attribute=c['attribute'], operator=c['operator'], value=c['value'], type=c['type'])
+                        new_ar.conditions.add(old_c)
+
 def export_dnf_policy(policy_id):
     policy = {}
     and_rules = models.And_rule.objects.filter(policy = policy_id).all()

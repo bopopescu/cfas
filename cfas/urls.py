@@ -6,7 +6,7 @@ from policies import views, models
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description','type')
+        fields = ('description')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:

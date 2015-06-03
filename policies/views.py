@@ -15,14 +15,14 @@ class PolicyViewSet(viewsets.ModelViewSet):
         instance.delete()                                             # Now, delete the policy itself
 
     def perform_create(self, serializer):
-        instance = serializer.save(description=self.request.data['description'], type=self.request.data['type'])
+        instance = serializer.save(description=self.request.data['description'])
         if 'content' in self.request.data:
-            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
+            dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def perform_update(self, serializer):
         instance = serializer.save()
         if 'content' in self.request.data:
-            openstack_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
+            dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
         service = self.request.query_params.get('service', None)
@@ -36,10 +36,7 @@ class PolicyViewSet(viewsets.ModelViewSet):
             policy = models.Policy.objects.get(id=pk)
             serializer = PolicySerializer(policy)
             resp['policy'] = serializer.data
-            if policy.type == 'o':
-                resp['policy']['content'] = openstack_parser.export_openstack_policy(pk, filters)
-            elif policy.type == 'd':
-                resp['policy']['content'] = dnf_parser.export_dnf_policy(pk)
+            resp['policy']['content'] = dnf_parser.export_dnf_policy(pk)
             return Response(resp)
         except:
             resp['detail'] = "Not found."
