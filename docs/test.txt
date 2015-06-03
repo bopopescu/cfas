@@ -1,15 +1,14 @@
+## API Calls Examples
+
 ## Policies
 # List
-curl -X GET http://localhost:8000/v3/policies/ | python -mjson.tool
+curl -v -X GET http://localhost:8000/v3/policies/ | python -mjson.tool
 # Retrieve
-curl -X GET http://localhost:8000/v3/policies/9/ | python -mjson.tool
+curl -v -X GET http://localhost:8000/v3/policies/1/ | python -mjson.tool
 # Create
-curl -X POST -H "Content-Type: application/json" -d '{ "description": "test" }' http://localhost:8000/v3/policies/ | python -mjson.tool
---
-{
-    "description": "test",
-    "id": 13
-}
+curl -v -X POST -H "Content-Type: application/json" -d @pol.json http://localhost:8000/v3/policies/ | python -mjson.tool
+# Update
+curl -v -X PATCH -H "Content-Type: application/json" -d @pol.json http://localhost:8000/v3/policies/1/ | python -mjson.tool
 # Delete
 curl -X DELETE http://localhost:8000/v3/policies/13/ | python -mjson.tool
 
@@ -22,52 +21,20 @@ curl -X GET http://localhost:8000/v3/policies/and_rules/?policy=10 | python -mjs
 # Retrieve
 curl -X GET http://localhost:8000/v3/policies/and_rules/1056/ | python -mjson.tool
 # Create
-curl -X POST -H "Content-Type: application/json" -d '{ "policy": 9, "description": "identity:test", "enabled": false, "conditions": [] }' http://localhost:8000/v3/policies/and_rules/ | python -mjson.tool
---
-{
-    "conditions": [],
-    "description": "identity:test",
-    "enabled": false,
-    "id": 1432,
-    "policy": 9
-}
+curl -X POST -H "Content-Type: application/json" -d '{ "policy": 1, "description": "identity:test", "enabled": false, "conditions": [] }' http://localhost:8000/v3/policies/and_rules/ | python -mjson.tool
 # Patch
-curl -X PATCH -H "Content-Type: application/json" -d '{ "policy": 9, "description": "identity:test", "enabled": false, "conditions": [1109] }' http://localhost:8000/v3/policies/and_rules/1432/ | python -mjson.tool
+curl -X PATCH -H "Content-Type: application/json" -d '{ "policy": 1, "description": "identity:test", "enabled": false, "conditions": [1109] }' http://localhost:8000/v3/policies/and_rules/1/ | python -mjson.tool
 # Delete
-curl -X DELETE http://localhost:8000/v3/policies/and_rules/1432/ | python -mjson.tool
+curl -X DELETE http://localhost:8000/v3/policies/and_rules/1/ | python -mjson.tool
 
 
 ## Conditions
 # List
 curl -X GET http://localhost:8000/v3/policies/conditions/ | python -mjson.tool
 # Retrieve
-curl -X GET http://localhost:8000/v3/policies/conditions/1105/ | python -mjson.tool
+curl -X GET http://localhost:8000/v3/policies/conditions/1/ | python -mjson.tool
 # Create
 curl -X POST -H "Content-Type: application/json" -d '{ "attribute": "xxx", "operator": "=", "value": "111", "description": "xxx=111" }' http://localhost:8000/v3/policies/conditions/ | python -mjson.tool
---
-{
-    "attribute": "xxx",
-    "description": "xxx=111",
-    "id": 1107,
-    "operator": "=",
-    "value": "111"
-}
 # Delete
 curl -X DELETE http://localhost:8000/v3/policies/conditions/1107/ | python -mjson.tool
-
-
-## Granted Actions
-# List
-curl -X GET http://localhost:8000/v3/policies/actions/ | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/actions/?attributes={"user_id":["%(trust.trustor_user_id)s"], "role": "admin"} | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/actions/?attributes={"user_id":["%(user_id)s"]} | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/actions/?attributes={"is_admin":["True","1"], "role":["admin"]} | python -mjson.tool
-
-# Retrieve
-curl -X GET http://localhost:8000/v3/policies/9/actions/ | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/9/actions/?attributes={"user_id":["%(trust.trustor_user_id)s"], "role": "admin"} | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/9/actions/?attributes={"user_id":["%(user_id)s"]} | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/9/actions/?attributes={"is_admin":["True","1"], "role":["admin"]} | python -mjson.tool
-curl -X GET http://localhost:8000/v3/policies/9/actions/?attributes={%22is_admin%22:[%22True%22,%221%22],%20%22role%22:[%22admin%22]}  | python -mjson.tool
-
 
