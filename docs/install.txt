@@ -1,32 +1,38 @@
-mkdir /var/www/cfas
-chown -R ioram.ioram /var/www/cfas
-cd /var/www/cfas
+Installation Guide
+==================
 
-virtualenv -p python3 env
-source env/bin/activate
-   (deactivate)
-pip3 install django
-pip3 install djangorestframework
-pip3 install markdown
-pip3 install django-filter
-pip3 install pyeda
-pip3 install pyparsing
+1. Clone the repository
 
-#pip3 install --allow-all-external mysql-connector-python
-pip3 install git+https://github.com/multiplay/mysql-connector-python
+$ git clone https://github.com/ioram7/cfas.git -b papai
 
-#env/bin/django-admin.py startproject cfas .
+2. Enter cfas folder
 
-Modify cfas/settings.py
-(add restframework to INSTALLED_APPS)
-(modify DATABASE entry to mysql)
+$ cd cfas
 
-Modify cfas/urls.py
-(http://www.django-rest-framework.org/#installation)
+3. Create a virtual environment and activate it
 
-python manage.py migrate
-python manage.py createsuperuser
+$ virtualenv -p python3 env
+$ source env/bin/activate
 
+4. Install libraries into this virtual environoment
 
-Iniciar server:
-env/bin/python manage.py runserver 0.0.0.0:8000
+$ pip3 install django
+$ pip3 install djangorestframework
+$ pip3 install markdown
+$ pip3 install django-filter
+$ pip3 install pyeda
+$ pip3 install pyparsing
+$ pip3 install git+https://github.com/multiplay/mysql-connector-python
+
+5. Update settings according to your environment (eg. DATABASE properties)
+
+$ vi cfas/settings.py
+
+6. Set up the database
+
+$ python manage.py migrate
+$ python manage.py createsuperuser
+
+7. Start the server
+
+$ env/bin/python manage.py runserver 0.0.0.0:8000
