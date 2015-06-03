@@ -25,12 +25,6 @@ class PolicyViewSet(viewsets.ModelViewSet):
             dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
-        service = self.request.query_params.get('service', None)
-        action = self.request.query_params.get('action', None)
-        filters = {}
-        filters['service'] = service
-        filters['action'] = action
-
         resp = {}
         try:
             policy = models.Policy.objects.get(id=pk)
@@ -47,28 +41,6 @@ class PolicyViewSet(viewsets.ModelViewSet):
         serializer = PolicySerializer(queryset, many=True)
         resp = {}
         resp['policies'] = serializer.data
-        return Response(resp)
-
-    # get /policies/1/actions_per_attributes/?attributes={"role": ["admin"], "attr2": [--list--]}
-    @detail_route(methods=['get'], url_path='actions')
-    def actions_retrieve(self, request, pk=None):
-        resp = {}
-        attributes = self.request.query_params.get('attributes', None)
-        if attributes is None:
-            attributes = "{}"
-        queryset = models.And_rule.objects.filter(policy=pk).all()
-        resp['actions'] = openstack_parser.actions(queryset, attributes)            
-        return Response(resp)
-
-    # get /policies/actions/?attributes={"role": ["admin"], "attr2": [--list--]}
-    @list_route(methods=['get'], url_path='actions')
-    def actions_list(self, request):
-        resp = {}
-        attributes = self.request.query_params.get('attributes', None)
-        if attributes is None:
-            attributes = "{}"
-        queryset = models.And_rule.objects.all()
-        resp['actions'] = openstack_parser.actions(queryset, attributes)
         return Response(resp)
 
 class And_ruleViewSet(viewsets.ModelViewSet):
