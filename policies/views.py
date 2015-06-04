@@ -42,6 +42,19 @@ class PolicyViewSet(viewsets.ModelViewSet):
         resp['policies'] = serializer.data
         return Response(resp)
 
+    @detail_route(methods=['post'], url_path='search')
+    def search(self, request, pk=None):
+        resp = {}
+        if not "criteria" in request.data or not "combining_rule" in request.data:
+            resp['detail'] = "Missing argument"
+            return Response(resp, status=412)
+        elif request.data['combining_rule'] == "and" or request.data['combining_rule'] == "or":
+            resp['and_rules'] = dnf_parser.search(pk, request.data)
+            return Response(resp)
+        else:
+            resp['detail'] = "Combining Rule not Supported"
+            return Response(resp, status=415)
+
 class And_ruleViewSet(viewsets.ModelViewSet):
     queryset = models.And_rule.objects.all()
     serializer_class = And_ruleSerializer

@@ -49,3 +49,28 @@ def export_dnf_policy(policy_id):
             policy_and_rules.append(policy_and_rule)
     policy['and_rules'] = policy_and_rules
     return policy
+
+def search(policy_id, data):
+    and_rules = models.And_rule.objects.filter(policy = policy_id).all()
+    policy_and_rules = []
+    for and_rule in and_rules: # For each and_rule
+        if and_rule.enabled:  # If it is enabled
+            policy_and_rule = {}
+            policy_and_rule['id'] = and_rule.id
+            policy_and_rule['description'] = and_rule.description
+            policy_and_rule['conditions'] = []
+            and_insert = True
+            for cond in and_rule.conditions.all():     # Check all Conditions
+                print(cond.attribute)
+                for cri_cond in data['criteria']:
+                    if cri_cond['attribute'] == cond.attribute and cri_cond['operator'] == cond.operator:
+                        if (cond.type == 'c' and cri_cond['value'] == cond.value) or cond.type == 'v':
+                            serializer = serializers.ConditionSerializer(cond)
+                            policy_and_rule['conditions'].append(serializer.data)
+                        else:
+                            and_insert = False
+                    else:
+                        and_insert = False                            
+            if (data['combining_rule'] == "or" or (data['combining_rule'] == "and" and and_insert == True)):
+                policy_and_rules.append(policy_and_rule)
+    return policy_and_rules
