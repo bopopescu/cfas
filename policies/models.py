@@ -5,7 +5,7 @@ class Policy(models.Model):
 
 class Condition(models.Model):
     attribute = models.CharField(max_length=255)
-    operator = models.CharField(max_length=1)
+    operator = models.CharField(max_length=10)
     value = models.CharField(max_length=255)
     type = models.CharField(max_length=1)
     description = models.CharField(max_length=255)
