@@ -38,3 +38,6 @@ curl -X POST -H "Content-Type: application/json" -d '{ "attribute": "xxx", "oper
 # Delete
 curl -X DELETE http://localhost:8000/v3/policies/conditions/1107/ | python -mjson.tool
 
+
+## Search
+curl -v -X POST -H "Content-Type: application/json" -d @search.json http://localhost:8000/v3/policies/1/search | python -mjson.tool
