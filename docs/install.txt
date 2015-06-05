@@ -3,7 +3,7 @@ Installation Guide
 
 1. Clone the repository
 
-$ git clone https://github.com/ioram7/cfas.git -b papai
+$ git clone https://github.com/ioram7/cfas.git -b papai-search
 
 2. Enter cfas folder
 
