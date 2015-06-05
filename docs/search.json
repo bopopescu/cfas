@@ -1,0 +1,15 @@
+{
+    "combining_rule": "or", 
+    "criteria": [
+            {
+                "attribute":"role", 
+                "operator": "=", 
+                "value":"admin"
+            },
+            {
+                "attribute":"user_id", 
+                "operator": "=", 
+                "value":"ioram"
+            }
+      ]
+}

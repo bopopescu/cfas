@@ -1,0 +1,15 @@
+{
+    "combining_rule": "and", 
+    "criteria": [
+            {
+                "attribute":"action", 
+                "operator": "=", 
+                "value":"change_password"
+            },
+            {
+                "attribute":"user_id", 
+                "operator": "=", 
+                "value":"ioram"
+            }
+      ]
+}
