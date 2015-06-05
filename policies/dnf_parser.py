@@ -59,18 +59,28 @@ def search(policy_id, data):
             policy_and_rule['id'] = and_rule.id
             policy_and_rule['description'] = and_rule.description
             policy_and_rule['conditions'] = []
-            and_insert = True
-            for cond in and_rule.conditions.all():     # Check all Conditions
-                print(cond.attribute)
-                for cri_cond in data['criteria']:
-                    if cri_cond['attribute'] == cond.attribute and cri_cond['operator'] == cond.operator:
-                        if (cond.type == 'c' and cri_cond['value'] == cond.value) or cond.type == 'v':
-                            serializer = serializers.ConditionSerializer(cond)
-                            policy_and_rule['conditions'].append(serializer.data)
-                        else:
-                            and_insert = False
-                    else:
-                        and_insert = False                            
-            if (data['combining_rule'] == "or" or (data['combining_rule'] == "and" and and_insert == True)):
+
+            if data['criteria'] == []:
+                all_criteria_matched = False
+            else:
+                all_criteria_matched = True
+
+            one_criterium_matched = False                # Start with none criterium matched
+            for cri_cond in data['criteria']:            # For each criterium
+                this_criterium_matched = False               # Start not matching this criterium
+                for cond in and_rule.conditions.all():       # For each condition
+                    if cri_cond["attribute"] == cond.attribute and cri_cond["operator"] == cond.operator:
+                        if (cond.type == 'c' and cri_cond["value"] == cond.value) or cond.type == 'v':
+                            one_criterium_matched = True     # At least one criterium matched
+                            this_criterium_matched = True    # This criterium matched
+
+                    serializer = serializers.ConditionSerializer(cond)
+                    if serializer.data not in policy_and_rule["conditions"]:
+                        policy_and_rule["conditions"].append(serializer.data)
+
+                all_criteria_matched = all_criteria_matched and this_criterium_matched # Check if all criteria matched
+
+            if (data['combining_rule'] == "or" and one_criterium_matched) or (data['combining_rule'] == "and" and all_criteria_matched):
                 policy_and_rules.append(policy_and_rule)
+
     return policy_and_rules

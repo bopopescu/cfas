@@ -1,7 +1,6 @@
 {
     "description": "keystone",
-    "content": 
-{
+    "content": {
         "and_rules": [
             {
                 "description": "identity:get_mapping:0",
@@ -6891,10 +6890,10 @@
                     },
                     {
                         "attribute": "role",
-                        "description": "role!=VoAdmin",
+                        "description": "role=VoAdmin",
                         "type": "c",
                         "value": "VoAdmin",
-                        "operator": "!="
+                        "operator": "="
                     },
                     {
                         "attribute": "action",
@@ -7825,5 +7824,3 @@
         ]
     }
 }
-}
-
