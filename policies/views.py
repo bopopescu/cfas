@@ -3,7 +3,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import detail_route, list_route
 from policies import models
 from policies import dnf_parser
-from policies.serializers import PolicySerializer, And_ruleSerializer, ConditionSerializer
+from policies import hierarchy
+from policies.serializers import PolicySerializer, And_ruleSerializer, ConditionSerializer\
+    , AttributeSerializer, ValueSerializer, HierarchySerializer
 
 class PolicyViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
@@ -132,4 +134,22 @@ class ConditionViewSet(viewsets.ModelViewSet):
             condition = models.Condition.objects.filter(id=pk).delete()
             resp['detail'] = "Condition deleted."
             return Response(resp, status=204)
+
+class AttributeViewSet(viewsets.ModelViewSet):
+    queryset = models.Attribute.objects.all()
+    serializer_class = AttributeSerializer
+
+class ValueViewSet(viewsets.ModelViewSet):
+    queryset = models.Value.objects.all()
+    serializer_class = ValueSerializer
+
+class HierarchyViewSet(viewsets.ModelViewSet):
+    queryset = models.Hierarchy.objects.all()
+    serializer_class = HierarchySerializer
+
+    def list(self, request):
+        policy = self.request.query_params.get('policy', None)
+        resp = {}
+        resp['attribute_hierarchies'] = hierarchy.list_attribute_hierarchies(policy)
+        return Response(resp)
 

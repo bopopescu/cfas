@@ -6,17 +6,32 @@ from policies import views, models
 class PolicySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Policy
-        fields = ('description')
+        fields = ('id', 'description')
 
 class And_ruleSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.And_rule
-        fields = ('policy', 'description', 'enabled', 'conditions')
+        fields = ('id', 'policy', 'description', 'enabled', 'conditions')
 
 class ConditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Condition
-        fields = ('negated', 'attribute', 'operator', 'value', 'type', 'description')
+        fields = ('id', 'attribute', 'operator', 'value', 'type', 'description')
+
+class AttributeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Attribute
+        fields = ('id', 'policy', 'attribute')
+
+class ValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Value
+        fields = ('id', 'attribute', 'value')
+
+class HierarchySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Hierarchy
+        fields = ('id', 'parent', 'child')
 
 class PolicyViewSet(viewsets.ModelViewSet):
     queryset = models.Policy.objects.all()
@@ -30,7 +45,22 @@ class ConditionViewSet(viewsets.ModelViewSet):
     queryset = models.Condition.objects.all()
     serializer_class = ConditionSerializer
 
+class AttributeViewSet(viewsets.ModelViewSet):
+    queryset = models.Attribute.objects.all()
+    serializer_class = AttributeSerializer
+
+class ValueViewSet(viewsets.ModelViewSet):
+    queryset = models.Value.objects.all()
+    serializer_class = ValueSerializer
+
+class HierarchyViewSet(viewsets.ModelViewSet):
+    queryset = models.Hierarchy.objects.all()
+    serializer_class = HierarchySerializer
+
 router = routers.DefaultRouter()
+router.register(r'v3/policies/values', views.ValueViewSet)
+router.register(r'v3/policies/attributes', views.AttributeViewSet)
+router.register(r'v3/policies/attribute_hierarchies', views.HierarchyViewSet)
 router.register(r'v3/policies/and_rules', views.And_ruleViewSet)
 router.register(r'v3/policies/conditions', views.ConditionViewSet)
 router.register(r'v3/policies', views.PolicyViewSet)
