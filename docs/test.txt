@@ -41,3 +41,10 @@ curl -X DELETE http://localhost:8000/v3/policies/conditions/1107/ | python -mjso
 
 ## Search
 curl -v -X POST -H "Content-Type: application/json" -d @search.json http://localhost:8000/v3/policies/1/search | python -mjson.tool
+
+## Hierarchy
+# List
+curl -v -X POST -H "Content-Type: application/json" -d @hierarchy.json http://localhost:8000/v3/policies/attribute_hierarchies/ | python -mjson.tool
+
+
+# Create

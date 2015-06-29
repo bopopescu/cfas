@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from rest_framework import routers, serializers, viewsets
+from rest_framework.views import APIView
 from policies import views, models
 
 class PolicySerializer(serializers.ModelSerializer):
@@ -53,14 +54,9 @@ class ValueViewSet(viewsets.ModelViewSet):
     queryset = models.Value.objects.all()
     serializer_class = ValueSerializer
 
-class HierarchyViewSet(viewsets.ModelViewSet):
-    queryset = models.Hierarchy.objects.all()
-    serializer_class = HierarchySerializer
-
 router = routers.DefaultRouter()
 router.register(r'v3/policies/values', views.ValueViewSet)
 router.register(r'v3/policies/attributes', views.AttributeViewSet)
-router.register(r'v3/policies/attribute_hierarchies', views.HierarchyViewSet)
 router.register(r'v3/policies/and_rules', views.And_ruleViewSet)
 router.register(r'v3/policies/conditions', views.ConditionViewSet)
 router.register(r'v3/policies', views.PolicyViewSet)
@@ -68,6 +64,7 @@ router.register(r'v3/policies', views.PolicyViewSet)
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
+    url(r'^v3/policies/attribute_hierarchies/', views.HierarchyView.as_view(), name='my_rest_view'),
     url(r'^', include(router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

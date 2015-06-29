@@ -6,10 +6,15 @@ import re
 def list_attribute_hierarchies(policy):
     resp = []
 
-    attributes = models.Attribute.objects.filter(policy=policy)
+    if policy == None:
+        attributes = models.Attribute.objects.all()
+    else:
+        attributes = models.Attribute.objects.filter(policy=policy)
+
     for attribute in attributes:
         attribute_serializer = serializers.AttributeSerializer(attribute)
         item = {}
+        item['policy'] = attribute_serializer.data['policy']
         item['attribute'] = attribute_serializer.data['attribute']
         item['hierarchy'] = {}
         parents = models.Value.objects.filter(attribute=attribute)
@@ -25,5 +30,4 @@ def list_attribute_hierarchies(policy):
         resp.append(item)
 
     return(resp)
-
 

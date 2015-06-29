@@ -1,6 +1,8 @@
 from rest_framework import viewsets
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route, list_route
+from rest_framework.views import APIView
 from policies import models
 from policies import dnf_parser
 from policies import hierarchy
@@ -143,13 +145,25 @@ class ValueViewSet(viewsets.ModelViewSet):
     queryset = models.Value.objects.all()
     serializer_class = ValueSerializer
 
-class HierarchyViewSet(viewsets.ModelViewSet):
-    queryset = models.Hierarchy.objects.all()
-    serializer_class = HierarchySerializer
+class HierarchyView(APIView):
+#    queryset = models.Hierarchy.objects.all()
+#    serializer_class = HierarchySerializer
 
-    def list(self, request):
+    def get(self, request):
         policy = self.request.query_params.get('policy', None)
         resp = {}
         resp['attribute_hierarchies'] = hierarchy.list_attribute_hierarchies(policy)
         return Response(resp)
 
+#    def perform_create(self, serializer):
+#        print(self.request.data)
+
+    def post(self, request, *args, **kwargs):
+        resp = {}
+        resp = request.data
+#        print(request)
+        return Response(resp)
+
+#        instance = serializer.save(description=self.request.data['description'])
+#        if 'content' in self.request.data:
+#            dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])

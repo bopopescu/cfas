@@ -1,0 +1,13 @@
+{
+    "policy": 2,
+    "attribute": "role",
+    "hierarchy": {
+        "admin": ["staff", "professor"],
+        "professor": ["lecturer"],
+        "lecturer": ["phd_student"],
+        "staff": ["phd_student"],
+        "phd_student": ["msc_student"],
+        "msc_student": ["undergrad_student"],
+        "undergrad_student": []
+    }
+}
