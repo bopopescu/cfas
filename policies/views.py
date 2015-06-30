@@ -145,9 +145,11 @@ class ValueViewSet(viewsets.ModelViewSet):
     queryset = models.Value.objects.all()
     serializer_class = ValueSerializer
 
+class HierarchyViewSet(viewsets.ModelViewSet):
+    queryset = models.Hierarchy.objects.all()
+    serializer_class = ValueSerializer
+
 class HierarchyView(APIView):
-#    queryset = models.Hierarchy.objects.all()
-#    serializer_class = HierarchySerializer
 
     def get(self, request):
         policy = self.request.query_params.get('policy', None)
@@ -155,15 +157,17 @@ class HierarchyView(APIView):
         resp['attribute_hierarchies'] = hierarchy.list_attribute_hierarchies(policy)
         return Response(resp)
 
-#    def perform_create(self, serializer):
-#        print(self.request.data)
-
     def post(self, request, *args, **kwargs):
         resp = {}
-        resp = request.data
-#        print(request)
-        return Response(resp)
+        if not 'attribute' in request.data or not 'hierarchy' in request.data or not 'policy' in request.data:
+            resp['detail'] = "Missing argument"
+            return Response(resp, status=412)
+        else:
+            try:
+                policy = models.Policy.objects.get(id=request.data['policy'])
+            except:
+                resp['detail'] = "Policy not found."
+                return Response(resp, status=404)
 
-#        instance = serializer.save(description=self.request.data['description'])
-#        if 'content' in self.request.data:
-#            dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
+            resp = hierarchy.create_attribute_hierarchy(request.data)
+            return Response(resp)

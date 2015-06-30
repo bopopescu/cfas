@@ -46,17 +46,17 @@ class ConditionViewSet(viewsets.ModelViewSet):
     queryset = models.Condition.objects.all()
     serializer_class = ConditionSerializer
 
-class AttributeViewSet(viewsets.ModelViewSet):
+'''class AttributeViewSet(viewsets.ModelViewSet):
     queryset = models.Attribute.objects.all()
     serializer_class = AttributeSerializer
 
 class ValueViewSet(viewsets.ModelViewSet):
     queryset = models.Value.objects.all()
-    serializer_class = ValueSerializer
+    serializer_class = ValueSerializer'''
 
 router = routers.DefaultRouter()
-router.register(r'v3/policies/values', views.ValueViewSet)
-router.register(r'v3/policies/attributes', views.AttributeViewSet)
+#router.register(r'v3/policies/values', views.ValueViewSet)
+#router.register(r'v3/policies/attributes', views.AttributeViewSet)
 router.register(r'v3/policies/and_rules', views.And_ruleViewSet)
 router.register(r'v3/policies/conditions', views.ConditionViewSet)
 router.register(r'v3/policies', views.PolicyViewSet)
