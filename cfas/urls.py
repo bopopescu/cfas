@@ -64,7 +64,8 @@ router.register(r'v3/policies', views.PolicyViewSet)
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    url(r'^v3/policies/attribute_hierarchies/', views.HierarchyView.as_view(), name='my_rest_view'),
+    url(r'^v3/policies/attribute_hierarchies/$', views.HierarchyListView.as_view()),
+    url(r'^v3/policies/attribute_hierarchies/(?P<pk>[0-9]+)/$', views.HierarchyDetailView.as_view()),
     url(r'^', include(router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]

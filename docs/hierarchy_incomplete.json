@@ -1,6 +1,4 @@
 {
-    "policy": 1,
-    "attribute": "role",
     "hierarchy": {
         "admin": ["staff", "professor"],
         "professor": ["lecturer"],

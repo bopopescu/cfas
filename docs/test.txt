@@ -44,7 +44,14 @@ curl -v -X POST -H "Content-Type: application/json" -d @search.json http://local
 
 ## Hierarchy
 # List
-curl -v -X POST -H "Content-Type: application/json" -d @hierarchy.json http://localhost:8000/v3/policies/attribute_hierarchies/ | python -mjson.tool
-
-
+curl -v -X GET http://localhost:8000/v3/policies/attribute_hierarchies/ | python -mjson.tool
 # Create
+curl -v -X POST -H "Content-Type: application/json" -d @hierarchy.json http://localhost:8000/v3/policies/attribute_hierarchies/ | python -mjson.tool
+# Retrieve
+curl -v -X GET http://localhost:8000/v3/policies/attribute_hierarchies/7/ | python -mjson.tool
+# Update
+curl -v -X PUT -H "Content-Type: application/json" -d @hierarchy.json http://localhost:8000/v3/policies/attribute_hierarchies/15/ | python -mjson.tool
+# Partial Update
+curl -v -X PATCH -H "Content-Type: application/json" -d @hierarchy_incomplete.json http://localhost:8000/v3/policies/attribute_hierarchies/15/ | python -mjson.tool
+# Delete
+curl -v -X DELETE http://localhost:8000/v3/policies/attribute_hierarchies/7/ | python -mjson.tool

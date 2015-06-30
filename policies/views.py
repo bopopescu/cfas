@@ -149,7 +149,7 @@ class HierarchyViewSet(viewsets.ModelViewSet):
     queryset = models.Hierarchy.objects.all()
     serializer_class = ValueSerializer
 
-class HierarchyView(APIView):
+class HierarchyListView(APIView):
 
     def get(self, request):
         policy = self.request.query_params.get('policy', None)
@@ -157,7 +157,7 @@ class HierarchyView(APIView):
         resp['attribute_hierarchies'] = hierarchy.list_attribute_hierarchies(policy)
         return Response(resp)
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         resp = {}
         if not 'attribute' in request.data or not 'hierarchy' in request.data or not 'policy' in request.data:
             resp['detail'] = "Missing argument"
@@ -168,6 +168,100 @@ class HierarchyView(APIView):
             except:
                 resp['detail'] = "Policy not found."
                 return Response(resp, status=404)
+            try:
+                attribute = models.Attribute.objects.get(attribute=request.data['attribute'], policy=request.data['policy'])
+                resp['detail'] = "Conflict: Attribute already exists."
+                return Response(resp, status=409)
+            except:
+                resp = hierarchy.create_attribute_hierarchy(request.data)
+                return Response(resp)
 
-            resp = hierarchy.create_attribute_hierarchy(request.data)
+class HierarchyDetailView(APIView):
+
+    def get(self, request, pk):
+        resp = {}
+        try:
+            attribute = models.Attribute.objects.get(id=pk)
+        except:
+            resp['detail'] = "Attribute not found."
+            return Response(resp, status=404)
+
+        resp = hierarchy.retrieve_attribute_hierarchy(attribute)
+        return Response(resp)
+
+    def delete(self, request, pk):
+        try:
+            attribute = models.Attribute.objects.get(id=pk)
+        except:
+            pass
+
+        hierarchy.delete_attribute_hierarchy(attribute, att=True)
+
+        return Response(status=204)        
+        
+    def patch(self, request, pk):
+        resp = {}
+
+        try:
+            attribute = models.Attribute.objects.get(id=pk)
+        except:
+            resp['detail'] = "Attribute not found."
+            return Response(resp, status=404)
+
+        if 'policy' in request.data:
+            try:
+                policy = models.Policy.objects.get(id=request.data['policy'])
+            except:
+                resp['detail'] = "Policy not found."
+                return Response(resp, status=404)
+        else:
+            try:
+                policy = models.Policy.objects.get(id=attribute.policy.id)
+            except:
+                resp['detail'] = "Policy not found. 2"
+                return Response(resp, status=404)
+
+        if 'attribute' in request.data:
+            try:
+                new_attribute = models.Attribute.objects.get(attribute=request.data['attribute'], policy=policy.id)
+            except:
+                new_attribute = attribute
+        else:
+            new_attribute = attribute
+
+        if attribute.id != new_attribute.id:
+            resp['detail'] = "Conflict: new attribute already exists with a different id (" + str(new_attribute.id) + ")."
+            return Response(resp, status=409)
+            
+        resp = hierarchy.update_attribute_hierarchy(attribute, policy, request.data)
+        return Response(resp)
+
+    def put(self, request, pk):
+        resp = {}
+        if not 'attribute' in request.data or not 'hierarchy' in request.data or not 'policy' in request.data:
+            resp['detail'] = "Missing argument"
+            return Response(resp, status=412)
+        else:
+
+            try:
+                attribute = models.Attribute.objects.get(id=pk)
+            except:
+                resp['detail'] = "Attribute not found."
+                return Response(resp, status=404)
+
+            try:
+                policy = models.Policy.objects.get(id=request.data['policy'])
+            except:
+                resp['detail'] = "Policy not found."
+                return Response(resp, status=404)
+
+            try:
+                 new_attribute = models.Attribute.objects.get(attribute=request.data['attribute'], policy=request.data['policy'])
+                 if attribute.id != new_attribute.id:
+                     resp['detail'] = "Conflict: new attribute already exists with a different id (" + str(new_attribute.id) + ")."
+                     return Response(resp, status=409)
+            except:
+                pass
+
+            resp = hierarchy.update_attribute_hierarchy(attribute, policy, request.data)
             return Response(resp)

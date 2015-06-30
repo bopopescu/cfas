@@ -3,6 +3,27 @@ from policies import serializers
 import json
 import re
 
+def retrieve_attribute_hierarchy(attribute):
+    resp = {}
+
+    attribute_serializer = serializers.AttributeSerializer(attribute)
+    resp['id'] = attribute_serializer.data['id']
+    resp['policy'] = attribute_serializer.data['policy']
+    resp['attribute'] = attribute_serializer.data['attribute']
+    resp['hierarchy'] = {}
+    parents = models.Value.objects.filter(attribute=attribute)
+    for parent in parents:
+        parent_serializer = serializers.ValueSerializer(parent)
+        resp['hierarchy'][parent_serializer.data['value']] = []
+        hierarchies = models.Hierarchy.objects.filter(parent=parent)
+        hierarchies_serializer = serializers.HierarchySerializer(hierarchies, many=True)
+        for hierarchy in hierarchies_serializer.data:
+            child = models.Value.objects.get(id=hierarchy['child'])
+            child_serializer = serializers.ValueSerializer(child)
+            resp['hierarchy'][parent_serializer.data['value']].append(child_serializer.data['value'])
+
+    return(resp)
+
 def list_attribute_hierarchies(policy):
     resp = []
 
@@ -12,67 +33,32 @@ def list_attribute_hierarchies(policy):
         attributes = models.Attribute.objects.filter(policy=policy)
 
     for attribute in attributes:
-        attribute_serializer = serializers.AttributeSerializer(attribute)
-        item = {}
-        item['policy'] = attribute_serializer.data['policy']
-        item['attribute'] = attribute_serializer.data['attribute']
-        item['hierarchy'] = {}
-        parents = models.Value.objects.filter(attribute=attribute)
-        for parent in parents:
-            parent_serializer = serializers.ValueSerializer(parent)
-            item['hierarchy'][parent_serializer.data['value']] = []
-            hierarchies = models.Hierarchy.objects.filter(parent=parent)
-            hierarchies_serializer = serializers.HierarchySerializer(hierarchies, many=True)
-            for hierarchy in hierarchies_serializer.data:
-                child = models.Value.objects.get(id=hierarchy['child'])
-                child_serializer = serializers.ValueSerializer(child)
-                item['hierarchy'][parent_serializer.data['value']].append(child_serializer.data['value'])
+        item = retrieve_attribute_hierarchy(attribute)
         resp.append(item)
 
     return(resp)
 
-def create_attribute_hierarchy(data):
-    resp = {}
-    
-    #print(data)
-    '''{
-     'policy': '2',
-     'attribute': 'role', 
-     'hierarchy': {'professor': ['lecturer'], 
-                   'msc_student': ['undergrad_student'], 
-                   'phd_student': ['msc_student'], 
-                   'undergrad_student': [], 
-                   'admin': ['staff', 'professor'], 
-                   'lecturer': ['phd_student'], 
-                   'staff': ['phd_student']}
-    }'''
+def update_attribute_hierarchy(attribute, policy, data):
 
-    # Retrieve attribute, or create if doesn't exist
+    attribute_serializer = serializers.AttributeSerializer(attribute)
 
-    attribute = {}
+    if 'hierarchy' in data:
+        # Delete all the accepted values/hierarchies for this attribute (if exists any)
+        delete_attribute_hierarchy(attribute_serializer.data, att=False)
+        create_hierarchy(attribute_serializer.data, data['hierarchy'])
 
-    try:
-        att = models.Attribute.objects.get(attribute=data['attribute'], policy=data['policy'])
-        serializer = serializers.AttributeSerializer(att)
-        attribute = serializer.data
-    except:
-        att = {}
-        att['policy'] = data['policy']
-        att['attribute'] = data['attribute']
+    if 'attribute' in data:
+        attribute.attribute = data['attribute']
+    if 'policy' in data:
+        attribute.policy = policy
+    if 'attribute' in data or 'policy' in data:
+        attribute.save()
 
-        serializer = serializers.AttributeSerializer(data=att)
-        if serializer.is_valid():
-            instance = serializer.save()
-            attribute = serializer.data
-        else:
-            print("Attribute Error!")
-            print(att)
-            print(serializer.errors) # Error!
+    resp = retrieve_attribute_hierarchy(attribute)
 
-    #resp = attribute # Debug
+    return(resp)
 
-    # Delete all the accepted values/hierarchies for this attribute (if exists any)
-
+def delete_attribute_hierarchy(attribute, att=False):
     try:
         values = models.Value.objects.filter(attribute=attribute['id'])
         for value in values:
@@ -81,14 +67,42 @@ def create_attribute_hierarchy(data):
                 for hierarchy in hierarchies:
                     hierarchy.delete()
             except:
-                print("No parent found")
+                print("No parent found.")
             value.delete()
     except:
-        print("No value found")
+        print("No value found.")
 
-    # Create hierarchy for this attribute
+    if att:
+        attribute.delete()
 
-    for parent, children in data['hierarchy'].items():
+def create_attribute_hierarchy(data):
+    resp = {}
+
+    # Create the attribute object
+    att = {}
+    att['policy'] = data['policy']
+    att['attribute'] = data['attribute']
+
+    serializer = serializers.AttributeSerializer(data=att)
+    if serializer.is_valid():
+        instance = serializer.save()    # Create the attribute
+        attribute = serializer.data
+        create_hierarchy(attribute, data['hierarchy'])
+
+        # Set the response
+        resp = data
+        resp['id'] = attribute['id']
+
+    else:
+        print("Attribute Error!")
+        print(att)
+        print(serializer.errors) # Error!
+
+    return(resp)
+
+def create_hierarchy(attribute, hierarchy):
+
+    for parent, children in hierarchy.items():
         # Verify if exists parent in values and create if not
         parent_value = {}
         try:
@@ -100,14 +114,14 @@ def create_attribute_hierarchy(data):
             val['attribute'] = attribute['id']
             val['value'] = parent
 
-        serializer = serializers.ValueSerializer(data=val)
-        if serializer.is_valid():
-            instance = serializer.save()
-            parent_value = serializer.data
-        else:
-            print("Parent Error!")
-            print(val)
-            print(serializer.errors) # Error!
+            serializer = serializers.ValueSerializer(data=val)
+            if serializer.is_valid():
+                instance = serializer.save()
+                parent_value = serializer.data
+            else:
+                print("Parent Error!")
+                print(val)
+                print(serializer.errors) # Error!
 
         # For all children...
         for child in children:
@@ -122,20 +136,16 @@ def create_attribute_hierarchy(data):
                 val['attribute'] = attribute['id']
                 val['value'] = child
 
-            serializer = serializers.ValueSerializer(data=val)
-            if serializer.is_valid():
-                instance = serializer.save()
-                child_value = serializer.data
-            else:
-                print("Child Error!")
-                print(val)
-                print(serializer.errors) # Error!
+                serializer = serializers.ValueSerializer(data=val)
+                if serializer.is_valid():
+                    instance = serializer.save()
+                    child_value = serializer.data
+                else:
+                    print("Child Error!")
+                    print(val)
+                    print(serializer.errors) # Error!
 
             # Create hierarchy Parent-Child
-
-            print(parent_value)
-            print(child_value)
-
             hierarchy_entry = {}
             hierarchy_entry['parent'] = parent_value['id']
             hierarchy_entry['child'] = child_value['id']
@@ -147,6 +157,3 @@ def create_attribute_hierarchy(data):
                 print("Hierarchy Error!")
                 print(hierarchy_entry)
                 print(serializer.errors) # Error!
-
-    return(data)
-
