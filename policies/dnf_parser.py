@@ -55,8 +55,9 @@ def expand_and_rule_using_hierarchy(and_rule):
     conds = []    # Expanded list of conditions (from and_rule and from the hierarchy)
     cnf_rule = "" # AND Rule in CNF, eg: (C1 & (C2 | C2a | C2b) & C3) 
 
+    has_ancestors =  False
+
     for cond in and_rule.conditions.all():
-        has_ancestors =  False
 
         # Add condition to conds
         cond_serializer = serializers.ConditionSerializer(cond)
@@ -81,8 +82,10 @@ def expand_and_rule_using_hierarchy(and_rule):
                     pass # Child not found
 
                 if child != None:
+                    #print(child.value)
                     # Get ancestors list for the child
                     ancestors = hierarchy.list_ancestors(child, [])
+                    #print(ancestors)
                     if ancestors != []:
                         has_ancestors = True
                         for ancestor in ancestors:
@@ -106,6 +109,8 @@ def expand_and_rule_using_hierarchy(and_rule):
 
     if has_ancestors:
         exp = to_dnf(conds, cnf_rule)
+#        print(exp)
+#        print("================")
         s = str(exp).strip()     # Or(And(c0, c1, c2), And(c0, c1, c3))
         s = re.sub(' ', '', s)   # Or(And(c0,c1,c2),And(c0,c1,c3))
         s = s[3:-1]              # And(c0,c1,c2),And(c0,c1,c3)
