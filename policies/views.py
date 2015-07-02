@@ -28,16 +28,20 @@ class PolicyViewSet(viewsets.ModelViewSet):
             dnf_parser.create_and_rules_and_conditions(instance, self.request.data['content'])
 
     def retrieve(self, request, pk=None):
+        use_hierarchy = self.request.query_params.get('hierarchy', False)
+
         resp = {}
         try:
             policy = models.Policy.objects.get(id=pk)
-            serializer = PolicySerializer(policy)
-            resp['policy'] = serializer.data
-            resp['policy']['content'] = dnf_parser.export_dnf_policy(pk)
-            return Response(resp)
         except:
             resp['detail'] = "Not found."
             return Response(resp, status=404)
+
+        serializer = PolicySerializer(policy)
+        resp['policy'] = serializer.data
+        resp['policy']['content'] = dnf_parser.export_dnf_policy(pk, use_hierarchy)
+        return Response(resp)
+
 
     def list(self, request):
         queryset = models.Policy.objects.all()

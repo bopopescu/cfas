@@ -3,6 +3,26 @@ from policies import serializers
 import json
 import re
 
+def list_ancestors(child, ancestors):
+    try:
+        hierarchies = models.Hierarchy.objects.filter(child=child.id)
+    except:
+        return(ancestors)
+
+    hierarchies_serializer = serializers.HierarchySerializer(hierarchies, many=True)
+
+    #print (hierarchies_serializer.data)
+
+    for hierarchy in hierarchies_serializer.data:
+        if hierarchy['parent'] not in ancestors:
+            try:
+                parent = models.Value.objects.get(id=hierarchy['parent'])
+                ancestors.append(parent.value)
+                ancestors = list_ancestors(parent, ancestors)
+            except:
+                print("Error: Value not found")
+    return(ancestors)
+
 def retrieve_attribute_hierarchy(attribute):
     resp = {}
 
@@ -157,3 +177,4 @@ def create_hierarchy(attribute, hierarchy):
                 print("Hierarchy Error!")
                 print(hierarchy_entry)
                 print(serializer.errors) # Error!
+

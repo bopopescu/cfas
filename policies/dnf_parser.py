@@ -1,5 +1,6 @@
 from policies import models
 from policies import serializers
+from policies import hierarchy
 import json
 import re
 
@@ -33,7 +34,56 @@ def create_and_rules_and_conditions(instance, policy):
                         old_c = models.Condition.objects.get(attribute=c['attribute'], operator=c['operator'], value=c['value'], type=c['type'])
                         new_ar.conditions.add(old_c)
 
-def export_dnf_policy(policy_id):
+def expand_and_rule_using_hierarchy(and_rule):
+    attributes = models.Attribute.objects.filter(policy = and_rule.policy.id)
+
+#    conds = []    # Expanded list of conditions (from and_rule and from the hierarchy)
+#    cnf_rule = "" # AND Rule in CNF, eg: (C1 & (C2 | C2a | C2b) & C3) 
+
+    and_list = [] # Expanded list of conditions of this and_rules according to the hierarchy
+                  # Eg. [ [{cond1}], [{cond2}, {cond2a}, {cond2b}], [{cond3}] ]
+                  #     meaning: C1 & (C2 | C2a | C2b) & C3
+
+    for cond in and_rule.conditions.all():
+        has_ancestors =  False
+
+        or_list = []
+
+        # Add condition to or_list
+        cond_serializer = serializers.ConditionSerializer(cond)
+        or_list.append(cond_serializer.data)
+
+        for attribute in attributes:
+            if cond.attribute == attribute.attribute:
+                child = None
+                try:
+                    child = models.Value.objects.get(value = cond.value, attribute = attribute.id)
+                except:
+                    pass # Child not found
+
+                if child != None:
+                    ancestors = hierarchy.list_ancestors(child, [])
+                    if ancestors != []:
+                        has_ancestors = True
+                        for ancestor in ancestors:
+                            #print(ancestor)
+                            # Add ancestor conditions to or_list
+                            try:
+                                c = models.Condition.objects.get(attribute=cond.attribute, operator=cond.operator, value=ancestor)
+                                cond_serializer = serializers.ConditionSerializer(c)
+                                or_list.append(cond_serializer.data)
+                            except:
+                                print("Error: Condition not found!")
+
+        # Add or_list to and_list                                
+        and_list.append(or_list)
+
+    if has_ancestors:
+        print(and_list)
+
+    return(and_list)
+
+def export_dnf_policy(policy_id, use_hierarchy):
     policy = {}
     and_rules = models.And_rule.objects.filter(policy = policy_id).all()
     policy_and_rules = []
@@ -43,10 +93,23 @@ def export_dnf_policy(policy_id):
             policy_and_rule['id'] = and_rule.id
             policy_and_rule['description'] = and_rule.description
             policy_and_rule['conditions'] = []
+
+            expand_and_rule_using_hierarchy(and_rule)
+
+            # check if any attribute is in hierarchy
+            # if YES
+                    # create a logical expression that represents the new and_rule (CNF)
+                    # transform it into DNF using the library
+                    # return LIST of AND_RULES
+                    # add LIST of AND_RULES to policy_and_rules
+            # if NO
+                    # add AND_RULE to policy_and_rules
+            
             for cond in and_rule.conditions.all():     # Check all Conditions
                 serializer = serializers.ConditionSerializer(cond)
                 policy_and_rule['conditions'].append(serializer.data)
             policy_and_rules.append(policy_and_rule)
+
     policy['and_rules'] = policy_and_rules
     return policy
 
