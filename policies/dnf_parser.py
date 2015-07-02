@@ -49,6 +49,19 @@ def create_and_rules_and_conditions(instance, policy):
                         old_c = models.Condition.objects.get(attribute=c['attribute'], operator=c['operator'], value=c['value'], type=c['type'])
                         new_ar.conditions.add(old_c)
 
+def expand_and_rule_without_hierarchy(and_rule):
+    and_rules = []
+    and_rule_serializer = serializers.And_ruleSerializer(and_rule)
+    andr = copy.copy(and_rule_serializer.data)
+    conditions = []
+    for cond in and_rule.conditions.all():     # Check all Conditions
+        cond_serializer = serializers.ConditionSerializer(cond)
+        conditions.append(cond_serializer.data)
+    andr['conditions'] = conditions
+    and_rules.append(andr)
+    return(and_rules)
+
+
 def expand_and_rule_using_hierarchy(and_rule):
     attributes = models.Attribute.objects.filter(policy = and_rule.policy.id)
 
@@ -129,9 +142,9 @@ def expand_and_rule_using_hierarchy(and_rule):
                     conditions.append(cd)
                     if cd['description'].find("Derived from:") == 0:
                         derived = True
-                andr['conditions'] = conditions
-                if derived:
-                    andr['description'] = "Derived from: " + andr['description']
+            andr['conditions'] = conditions
+            if derived:
+                andr['description'] = "Derived from: " + andr['description']
             and_rules.append(andr)
     else:
         andr = copy.copy(and_rule_serializer.data)
@@ -153,7 +166,10 @@ def export_dnf_policy(policy_id, use_hierarchy):
     for and_rule in and_rules: # For each and_rule
         if and_rule.enabled:  # If it is enabled
 
-            and_rules = expand_and_rule_using_hierarchy(and_rule)
+            if use_hierarchy:
+                and_rules = expand_and_rule_using_hierarchy(and_rule)
+            else:
+                and_rules = expand_and_rule_without_hierarchy(and_rule)
 
             for and_rule in and_rules:
                 policy_and_rules.append(and_rule)
